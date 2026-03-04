@@ -8,17 +8,18 @@ from tqdm import tqdm
 from video_utils import load_video
 from plot_utils import plot_positions, plot_court_positions, plot_heatmap, draw_court
 from calibrate import get_homography, apply_homography
-
-VIDEO_PATH = "../assets/video/sample.mp4"
-
-FRAME_CAP = 5000          # max frames to process (for testing; set to None to process entire video)
-FRAME_SKIP = 5            # process every Nth frame
-SMOOTH_WINDOW = 9         # rolling median window for noise filtering
-HIP_VISIBILITY_MIN = 0.6  # discard if either hip landmark is below this confidence
-MAX_JUMP_PX = 150         # discard if position jumps more than this many pixels
-CROP_MARGIN = 200         # pixel radius around last known position to crop for detection
-DEBUG_VIZ_EVERY = FRAME_SKIP     # update live debug plot every N processed frames
-ANGLE_MATCH_THRESHOLD = 0.7      # min histogram correlation to reference frame; below = different camera angle
+from stats import compute_movement_stats, print_stats_table
+from config import (
+    VIDEO_PATH,
+    FRAME_CAP,
+    FRAME_SKIP,
+    SMOOTH_WINDOW,
+    HIP_VISIBILITY_MIN,
+    MAX_JUMP_PX,
+    CROP_MARGIN,
+    DEBUG_VIZ_EVERY,
+    ANGLE_MATCH_THRESHOLD,
+)
 
 mp_pose = mp.solutions.pose
 
@@ -110,7 +111,7 @@ def smooth_positions(xs, ys, window):
 
 
 def main(debug=False, calibrate=False):
-    cap, _, frame_count = load_video(VIDEO_PATH)
+    cap, fps, frame_count = load_video(VIDEO_PATH)
 
     ret, first_frame = cap.read()
     if not ret:
@@ -214,6 +215,10 @@ def main(debug=False, calibrate=False):
 
     court_xs1, court_ys1 = apply_homography(xs1, ys1, H) if xs1 else ([], [])
     court_xs2, court_ys2 = apply_homography(xs2, ys2, H) if xs2 else ([], [])
+
+    stats1 = compute_movement_stats(court_xs1, court_ys1, fps, FRAME_SKIP)
+    stats2 = compute_movement_stats(court_xs2, court_ys2, fps, FRAME_SKIP)
+    print_stats_table(stats1, stats2)
 
     plot_positions(xs1, ys1, xs2, ys2, background=first_frame, title="Player Movement (Pixel Space)")
     plot_court_positions(court_xs1, court_ys1, court_xs2, court_ys2, title="Player Movement (Court Space)")

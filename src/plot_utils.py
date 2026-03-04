@@ -6,9 +6,19 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.ndimage import gaussian_filter
 
-from court import COURT_WIDTH_M, COURT_LENGTH_M, SHORT_LINE_M, HALF_COURT_M, SERVICE_BOX_M
-
-OUTPUT_DIR = "../output"
+from config import (
+    COURT_WIDTH_M,
+    COURT_LENGTH_M,
+    SHORT_LINE_M,
+    HALF_COURT_M,
+    SERVICE_BOX_M,
+    OUTPUT_DIR,
+    HEATMAP_GRID_X,
+    HEATMAP_GRID_Y,
+    HEATMAP_GAMMA,
+    PLAYER_COLORS,
+    PLAYER_LABELS,
+)
 
 
 def _save(fig, filename):
@@ -65,10 +75,6 @@ def draw_court(ax):
     ax.text(COURT_WIDTH_M / 2, COURT_LENGTH_M + 0.15, "Back wall", ha="center", fontsize=8, color="gray")
 
 
-PLAYER_COLORS = ["red", "dodgerblue"]
-PLAYER_LABELS = ["Player 1", "Player 2"]
-
-
 def plot_court_positions(xs1, ys1, xs2, ys2, title="Player Movement (Court Space)"):
     fig, ax = plt.subplots(figsize=(6, 9))
     draw_court(ax)
@@ -82,9 +88,6 @@ def plot_court_positions(xs1, ys1, xs2, ys2, title="Player Movement (Court Space
     _save(fig, "court_positions.png")
     plt.show()
 
-
-_GRID_X = 64   # cells across 6.4 m  → ~0.1 m per cell
-_GRID_Y = 100  # cells across 9.75 m → ~0.1 m per cell
 
 # Per-player colormaps: fully transparent at 0 density, opaque at peak
 # RGBA tuples: (R, G, B, alpha)
@@ -102,27 +105,24 @@ _PLAYER_CMAPS = [
 ]
 
 
-_HEATMAP_GAMMA = 0.4   # < 1 boosts mid-density areas; lower = more spread
-
-
 def _build_heatmap(xs, ys):
-    x_bins = np.linspace(0, COURT_WIDTH_M,  _GRID_X + 1)
-    y_bins = np.linspace(0, COURT_LENGTH_M, _GRID_Y + 1)
+    x_bins = np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)
+    y_bins = np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)
     # histogram2d(y, x) → H[y_row, x_col], matching imshow row=y convention
     h, _, _ = np.histogram2d(ys, xs, bins=[y_bins, x_bins])
     h = gaussian_filter(h, sigma=3.0)
     if h.max() > 0:
         h /= h.max()
-        h = h ** _HEATMAP_GAMMA  # compress dynamic range so sparse areas are visible
+        h = h ** HEATMAP_GAMMA  # compress dynamic range so sparse areas are visible
     return h
 
 
 def plot_heatmap(xs1, ys1, xs2, ys2, title="Player Heatmap"):
     """Overlay a per-player Gaussian heatmap on the court diagram."""
-    x_centers = (np.linspace(0, COURT_WIDTH_M,  _GRID_X + 1)[:-1] +
-                 np.linspace(0, COURT_WIDTH_M,  _GRID_X + 1)[1:]) / 2
-    y_centers = (np.linspace(0, COURT_LENGTH_M, _GRID_Y + 1)[:-1] +
-                 np.linspace(0, COURT_LENGTH_M, _GRID_Y + 1)[1:]) / 2
+    x_centers = (np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[:-1] +
+                 np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[1:]) / 2
+    y_centers = (np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[:-1] +
+                 np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[1:]) / 2
 
     datasets = [
         (xs1, ys1, PLAYER_LABELS[0], _PLAYER_CMAPS[0], "heatmap_player1.png"),

@@ -1,9 +1,14 @@
 import cv2
 import numpy as np
 
-from court import COURT_WIDTH_M, COURT_LENGTH_M, SHORT_LINE_M, HALF_COURT_M, SERVICE_BOX_M
-
-CALIBRATION_PATH = "../assets/homography.npy"
+from config import (
+    COURT_WIDTH_M,
+    COURT_LENGTH_M,
+    SHORT_LINE_M,
+    HALF_COURT_M,
+    SERVICE_BOX_M,
+    CALIBRATION_PATH,
+)
 
 # Derived court positions (y measured from front wall)
 _SHORT_Y  = COURT_LENGTH_M - SHORT_LINE_M        # 5.49 m
