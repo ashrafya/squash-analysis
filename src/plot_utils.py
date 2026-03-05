@@ -161,6 +161,84 @@ def plot_heatmap(xs1, ys1, xs2, ys2, title="Player Heatmap"):
         plt.show()
 
 
+def plot_histograms(xs1, ys1, xs2, ys2):
+    """2×2 histogram grid: Y and X court position distributions for both players."""
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle("Position Distributions")
+    datasets = [
+        (PLAYER_LABELS[0], PLAYER_COLORS[0], np.array(xs1), np.array(ys1)),
+        (PLAYER_LABELS[1], PLAYER_COLORS[1], np.array(xs2), np.array(ys2)),
+    ]
+    for row, (label, color, xs, ys) in enumerate(datasets):
+        ax = axes[row, 0]
+        ax.hist(ys, bins=np.linspace(0, COURT_LENGTH_M, 50), color=color, alpha=0.7,
+                label=f"μ={np.mean(ys):.2f} m")
+        ax.axvline(np.mean(ys), color=color, lw=1.5, ls="--")
+        ax.set_xlabel("Court Y (m)  ←front  |  back→")
+        ax.set_ylabel("Frame count")
+        ax.set_title(f"{label} — Y distribution")
+        ax.legend(fontsize=8)
+
+        ax = axes[row, 1]
+        ax.hist(xs, bins=np.linspace(0, COURT_WIDTH_M, 40), color=color, alpha=0.7,
+                label=f"μ={np.mean(xs):.2f} m")
+        ax.axvline(np.mean(xs), color=color, lw=1.5, ls="--")
+        ax.set_xlabel("Court X (m)  ←left  |  right→")
+        ax.set_ylabel("Frame count")
+        ax.set_title(f"{label} — X distribution")
+        ax.legend(fontsize=8)
+
+    plt.tight_layout()
+    _save(fig, "histograms.png")
+    plt.show()
+
+
+def plot_heatmap_comparison(hxs1, hys1, hxs2, hys2, gxs1, gys1, gxs2, gys2,
+                             output_dir=None):
+    """2×2 heatmap grid: rows=players, cols=hip(old)/heel-ankle(new). Saves and closes."""
+    x_centers = (np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[:-1] +
+                 np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[1:]) / 2
+    y_centers = (np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[:-1] +
+                 np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[1:]) / 2
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 18))
+    fig.suptitle("Heatmap Comparison: Hip (old) vs Heel/Ankle (new)", fontsize=13)
+
+    for row, (label, hip_data, grnd_data, cmap) in enumerate([
+        ("Player 1", (hxs1, hys1), (gxs1, gys1), _PLAYER_CMAPS[0]),
+        ("Player 2", (hxs2, hys2), (gxs2, gys2), _PLAYER_CMAPS[1]),
+    ]):
+        for col, ((xs, ys), method) in enumerate([
+            (hip_data,  "Hip (old)"),
+            (grnd_data, "Heel/Ankle (new)"),
+        ]):
+            ax = axes[row, col]
+            draw_court(ax)
+            h = _build_heatmap(xs, ys)
+            ax.imshow(h, extent=[0, COURT_WIDTH_M, COURT_LENGTH_M, 0],
+                      origin="upper", aspect="auto", cmap=cmap,
+                      vmin=0, vmax=1, zorder=1.5)
+            if h.max() > 0:
+                ax.contour(x_centers, y_centers, h,
+                           levels=[0.5, 0.8],
+                           colors=["white", "white"],
+                           linewidths=[1.0, 1.8],
+                           linestyles=["dashed", "solid"],
+                           zorder=4)
+            ax.set_title(f"{label} — {method}")
+
+    plt.tight_layout()
+    fname = "heatmap_comparison.png"
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        path = os.path.join(output_dir, fname)
+        fig.savefig(path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {path}")
+    else:
+        _save(fig, fname)
+    plt.close(fig)
+
+
 def plot_positions(xs1, ys1, xs2, ys2, background=None, title="Player Movement (Pixel Space)"):
     fig = plt.figure(figsize=(10, 7))
 
