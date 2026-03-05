@@ -32,12 +32,12 @@ def test_single_position_returns_none():
 
 # ── 3 ─────────────────────────────────────────────────────────────────────────
 def test_avg_speed_known_value():
-    """avg_speed = total_distance / (n_positions * time_per_step).
+    """avg_speed = total_distance / ((n_positions - 1) * time_per_step).
 
-    2 positions, 2.5 m apart: duration = 2 * (1/25) = 0.08 s → 31.25 m/s.
+    2 positions, 2.5 m apart: duration = 1 * (1/25) = 0.04 s → 62.5 m/s.
     """
     stats = _s([0.0, 2.5], [0.0, 0.0])
-    expected = 2.5 / (2 / FPS)   # 31.25 m/s
+    expected = 2.5 / (1 / FPS)   # 62.5 m/s
     assert stats["avg_speed_ms"] == pytest.approx(expected, rel=1e-3)
 
 
@@ -144,8 +144,8 @@ def test_frame_skip_scales_timing():
     Uses 25 positions so both durations (1.0 s and 5.0 s) round cleanly to 1 dp
     and the 5× ratio is preserved after rounding.
     """
-    xs = list(range(25))
-    ys = [0.0] * 25
+    xs = list(range(26))
+    ys = [0.0] * 26
     s1 = compute_movement_stats(xs, ys, FPS, 1)   # 25 * (1/25) = 1.0 s
     s5 = compute_movement_stats(xs, ys, FPS, 5)   # 25 * (5/25) = 5.0 s
     assert s5["duration_s"] == pytest.approx(s1["duration_s"] * 5, rel=1e-3)

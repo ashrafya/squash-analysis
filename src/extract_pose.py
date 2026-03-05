@@ -8,9 +8,9 @@ from scipy.ndimage import median_filter
 from tqdm import tqdm
 
 from video_utils import load_video
-from plot_utils import plot_positions, plot_court_positions, plot_heatmap, plot_histograms, draw_court
+from plot_utils import plot_positions, plot_court_positions, plot_heatmap, plot_histograms, draw_court, show_summary, plot_timeseries
 from calibrate import get_homography, apply_homography
-from stats import compute_movement_stats, print_stats_table, save_run_history
+from stats import compute_movement_stats, print_stats_table, save_run_history, compute_zone_stats, print_zone_table, compute_timeseries
 from config import (
     VIDEO_PATH,
     VIDEO_FPS,
@@ -24,6 +24,12 @@ from config import (
     DEBUG_VIZ_EVERY,
     ANGLE_MATCH_THRESHOLD,
     OUTPUT_DIR,
+    MIN_SEPARATION_PX,       # kept for _try_reassign (Day 12)
+    COUPLING_FRAMES_THRESHOLD,
+    COURT_WIDTH_M,
+    COURT_LENGTH_M,
+    MIN_SEPARATION_M,
+    COURT_BOUNDS_MARGIN_M,
 )
 
 mp_pose = mp.solutions.pose
@@ -112,42 +118,131 @@ def _detect_in_crop(frame, last_pos, margin, pose_model):
 
 
 def detect_in_region(frame, last_pos, pose_model):
-    """Detect player position with a wider-crop fallback on initial failure.
+    """Detect player position with progressively wider crop fallbacks.
 
-    Tries CROP_MARGIN first; if detection fails, widens to 2× CROP_MARGIN.
-    This catches frames where the player moved faster than expected and sits
-    near the edge of the normal crop window.
+    Tries CROP_MARGIN → 2× → 3× on successive failures.  The wider crops
+    catch frames where the player moved faster than expected or was temporarily
+    occluded and re-appears outside the narrow window.
     """
-    pos = _detect_in_crop(frame, last_pos, CROP_MARGIN, pose_model)
-    if pos is not None:
-        return pos
-    return _detect_in_crop(frame, last_pos, CROP_MARGIN * 2, pose_model)
+    for multiplier in (1, 2, 3):
+        pos = _detect_in_crop(frame, last_pos, CROP_MARGIN * multiplier, pose_model)
+        if pos is not None:
+            return pos
+    return None
+
+
+def _in_court_bounds(pixel_pos, H):
+    """Return True if pixel_pos maps to within the court (+COURT_BOUNDS_MARGIN_M) via H.
+
+    Rejects detections that project outside the squash court, which catches
+    spurious MediaPipe hits on advertising boards, scoreboards, or spectators.
+    Returns True on mapping failure (NaN / empty) so we don't discard valid
+    positions when the homography is ill-conditioned at the frame edges.
+    """
+    cx, cy = apply_homography([pixel_pos[0]], [pixel_pos[1]], H)
+    if not cx:
+        return True
+    x, y = cx[0], cy[0]
+    if np.isnan(x) or np.isnan(y):
+        return True  # can't verify — pass through rather than reject
+    lo_x = -COURT_BOUNDS_MARGIN_M
+    hi_x =  COURT_WIDTH_M  + COURT_BOUNDS_MARGIN_M
+    lo_y = -COURT_BOUNDS_MARGIN_M
+    hi_y =  COURT_LENGTH_M + COURT_BOUNDS_MARGIN_M
+    return lo_x <= x <= hi_x and lo_y <= y <= hi_y
 
 
 def auto_detect_players(frame):
-    """Detect two players by running pose detection on the top and bottom halves of the frame."""
+    """Detect two players by scanning four half-frame regions.
+
+    Scans top, bottom, left, and right halves independently, deduplicates
+    near-identical hits, then returns the two most spatially separated
+    detections.  This is more robust than a pure top/bottom split for videos
+    where both players appear in the same half or where the camera angle is
+    not strictly top-to-bottom.
+    """
     h, w = frame.shape[:2]
     pose_static = mp_pose.Pose(static_image_mode=True, model_complexity=1,
                                 min_detection_confidence=0.4)
-    positions = []
-    for y_start, y_end in [(0, h // 2), (h // 2, h)]:
-        crop = frame[y_start:y_end, :]
+
+    # (crop, y_offset, x_offset)
+    regions = [
+        (frame[0:h//2, :],    0,     0),     # top half
+        (frame[h//2:h, :],    h//2,  0),     # bottom half
+        (frame[:, 0:w//2],    0,     0),     # left half
+        (frame[:, w//2:w],    0,     w//2),  # right half
+    ]
+
+    raw = []
+    for crop, y_off, x_off in regions:
         rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
         results = pose_static.process(rgb)
         if results.pose_landmarks:
-            pos = get_ground_position(results.pose_landmarks.landmark, w, y_end - y_start)
+            pos = get_ground_position(results.pose_landmarks.landmark,
+                                      crop.shape[1], crop.shape[0])
             if pos is not None:
-                positions.append((pos[0], pos[1] + y_start))
+                raw.append((pos[0] + x_off, pos[1] + y_off))
+
     pose_static.close()
 
-    if len(positions) == 2:
-        return positions[0], positions[1]
-    elif len(positions) == 1:
-        other_y = 3 * h // 4 if positions[0][1] < h // 2 else h // 4
-        return positions[0], (w // 2, other_y)
-    else:
-        print("Auto-detection failed, using default positions.")
-        return (w // 2, h // 4), (w // 2, 3 * h // 4)
+    # Deduplicate: merge positions within 120px of an already-kept position
+    unique = []
+    for p in raw:
+        if not any(np.hypot(p[0] - u[0], p[1] - u[1]) < 120 for u in unique):
+            unique.append(p)
+
+    if len(unique) >= 2:
+        # Return the most spatially separated pair
+        best = max(
+            ((unique[i], unique[j])
+             for i in range(len(unique))
+             for j in range(i + 1, len(unique))),
+            key=lambda pair: np.hypot(pair[0][0] - pair[1][0], pair[0][1] - pair[1][1]),
+        )
+        return best[0], best[1]
+
+    if len(unique) == 1:
+        p = unique[0]
+        other_y = 3 * h // 4 if p[1] < h // 2 else h // 4
+        print(f"[Warning] Only one player auto-detected — P2 placed at default ({w // 2}, {other_y}). "
+              "Use --calibrate to re-run if tracking looks wrong.")
+        return p, (w // 2, other_y)
+
+    print("Auto-detection failed, using default positions.")
+    return (w // 2, h // 4), (w // 2, 3 * h // 4)
+
+
+def _try_reassign(frame, last_pos_1, last_pos_2):
+    """Full-frame re-detection with optimal re-assignment (2×2 Hungarian).
+
+    Runs auto_detect_players on the full frame and assigns the two candidate
+    positions to (P1, P2) by minimum-cost matching.  Returns the original
+    positions unchanged if auto-detect looks unreliable (candidates too far
+    from both expected positions — indicates a fallback-to-default result).
+    """
+    cand_a, cand_b = auto_detect_players(frame)
+
+    # Sanity check: each candidate must be close to at least one tracker AND
+    # the two candidates must be well-separated from each other (rules out the
+    # case where auto-detect found only one player and fabricated the second).
+    max_accept = CROP_MARGIN  # tighter than 2× — avoids accepting fallback defaults
+
+    def _near_either(c):
+        return (np.hypot(c[0] - last_pos_1[0], c[1] - last_pos_1[1]) < max_accept
+                or np.hypot(c[0] - last_pos_2[0], c[1] - last_pos_2[1]) < max_accept)
+
+    candidates_separated = np.hypot(cand_a[0] - cand_b[0], cand_a[1] - cand_b[1]) > MIN_SEPARATION_PX
+
+    if not (candidates_separated and _near_either(cand_a) and _near_either(cand_b)):
+        return last_pos_1, last_pos_2  # unreliable — keep current trackers
+
+    # Compare the two possible pairings and pick the lower-cost one
+    cost_ab = (np.hypot(cand_a[0] - last_pos_1[0], cand_a[1] - last_pos_1[1])
+               + np.hypot(cand_b[0] - last_pos_2[0], cand_b[1] - last_pos_2[1]))
+    cost_ba = (np.hypot(cand_b[0] - last_pos_1[0], cand_b[1] - last_pos_1[1])
+               + np.hypot(cand_a[0] - last_pos_2[0], cand_a[1] - last_pos_2[1]))
+
+    return (cand_a, cand_b) if cost_ab <= cost_ba else (cand_b, cand_a)
 
 
 def _compute_hist(frame):
@@ -203,7 +298,8 @@ def main(debug=False, calibrate=False, reuse=False):
         xs2, ys2 = [], []
         frame_idx = 0
         skipped = 0
-        swap_risk_frames = 0
+        coupling_streak = 0
+        max_coupling_streak = 0
 
         if debug:
             plt.ion()
@@ -254,8 +350,16 @@ def main(debug=False, calibrate=False, reuse=False):
                 pos1 = fut1.result()
                 pos2 = fut2.result()
 
+                # Reject detections that project outside the squash court
+                if pos1 is not None and not _in_court_bounds(pos1, H):
+                    pos1 = None
+                if pos2 is not None and not _in_court_bounds(pos2, H):
+                    pos2 = None
+
+                # Pixel-space jump cap (homography extrapolation is unreliable near court edges,
+                # so court-space velocity checks are not used here)
                 if pos1 is not None and np.hypot(pos1[0] - last_pos_1[0], pos1[1] - last_pos_1[1]) <= MAX_JUMP_PX:
-                    last_pos_1 = pos1  # update only on a valid detection
+                    last_pos_1 = pos1
                 xs1.append(last_pos_1[0])  # always record — hold last known position on failure
                 ys1.append(last_pos_1[1])
 
@@ -264,9 +368,20 @@ def main(debug=False, calibrate=False, reuse=False):
                 xs2.append(last_pos_2[0])
                 ys2.append(last_pos_2[1])
 
-                # Player proximity check — flag frames where identities could swap
-                if np.hypot(last_pos_1[0] - last_pos_2[0], last_pos_1[1] - last_pos_2[1]) < 50:
-                    swap_risk_frames += 1
+                # Coupling diagnostic (court-space): 0.2 m threshold — players can
+                # legitimately occlude each other on a squash court so we only flag
+                # them as coupled when they are extremely close in real-world metres.
+                # Active correction needs a real multi-person detector — see Day 12 Option B/C.
+                _cp1 = apply_homography([last_pos_1[0]], [last_pos_1[1]], H)
+                _cp2 = apply_homography([last_pos_2[0]], [last_pos_2[1]], H)
+                if (_cp1[0] and _cp2[0]
+                        and not np.isnan(_cp1[0][0]) and not np.isnan(_cp2[0][0])):
+                    court_sep_m = np.hypot(_cp1[0][0] - _cp2[0][0], _cp1[1][0] - _cp2[1][0])
+                    if court_sep_m < MIN_SEPARATION_M:
+                        coupling_streak += 1
+                        max_coupling_streak = max(max_coupling_streak, coupling_streak)
+                    else:
+                        coupling_streak = 0
 
                 pbar.update(FRAME_SKIP)
                 pbar.set_postfix(p1=len(xs1), p2=len(xs2), skipped=skipped)
@@ -294,8 +409,8 @@ def main(debug=False, calibrate=False, reuse=False):
             plt.ioff()
             plt.close(fig)
 
-        if swap_risk_frames:
-            print(f"[Warning] Players within 50px in {swap_risk_frames} frame(s) — possible identity swap.")
+        if max_coupling_streak >= COUPLING_FRAMES_THRESHOLD:
+            print(f"[Warning] Longest coupling streak: {max_coupling_streak} frames — possible identity swap (see Day 12 for fix).")
 
         # Save raw positions (pre-smoothing) so --reuse can reload them
         os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -323,12 +438,25 @@ def main(debug=False, calibrate=False, reuse=False):
     stats2 = compute_movement_stats(court_xs2, court_ys2, fps, FRAME_SKIP)
     print_stats_table(stats1, stats2)
 
-    save_run_history(stats1, stats2, len(xs1), len(xs2), VIDEO_PATH, FRAME_CAP, FRAME_SKIP)
+    zone1 = compute_zone_stats(court_xs1, court_ys1)
+    zone2 = compute_zone_stats(court_xs2, court_ys2)
+    print_zone_table(zone1, zone2)
+
+    save_run_history(stats1, stats2, len(xs1), len(xs2), VIDEO_PATH, FRAME_CAP, FRAME_SKIP,
+                     zone_stats1=zone1, zone_stats2=zone2)
+
+    ts1 = compute_timeseries(court_xs1, court_ys1, fps, FRAME_SKIP)
+    ts2 = compute_timeseries(court_xs2, court_ys2, fps, FRAME_SKIP)
 
     plot_positions(xs1, ys1, xs2, ys2, background=first_frame, title="Player Movement (Pixel Space)")
     plot_court_positions(court_xs1, court_ys1, court_xs2, court_ys2, title="Player Movement (Court Space)")
-    plot_heatmap(court_xs1, court_ys1, court_xs2, court_ys2)
+    plot_heatmap(court_xs1, court_ys1, court_xs2, court_ys2, zone_stats1=zone1, zone_stats2=zone2)
     plot_histograms(court_xs1, court_ys1, court_xs2, court_ys2)
+    plot_timeseries(ts1, ts2)
+
+    show_summary(court_xs1, court_ys1, court_xs2, court_ys2,
+                 zone_stats1=zone1, zone_stats2=zone2,
+                 ts1=ts1, ts2=ts2)
 
 
 if __name__ == "__main__":

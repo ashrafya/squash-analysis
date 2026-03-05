@@ -3,7 +3,7 @@
 # =============================================================================
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-VIDEO_PATH       = "../assets/video/women.mp4"
+VIDEO_PATH       = "../assets/video/men.mp4"
 CALIBRATION_PATH = "../assets/homography.npy"
 OUTPUT_DIR       = "../output"
 
@@ -20,7 +20,7 @@ T_Y = COURT_LENGTH_M - SHORT_LINE_M  # 5.49 m — T junction y position
 
 # ── Video Processing ──────────────────────────────────────────────────────────
 VIDEO_FPS        = 25   # known frame rate of the source videos — used for all timing math
-FRAME_CAP        = 5000 # max frames to process (set to None to process full video)
+FRAME_CAP        = 2000 # max frames to process (set to None to process full video)
 FRAME_SKIP       = 5    # process every Nth frame; time between analysed frames = FRAME_SKIP / VIDEO_FPS
 MODEL_COMPLEXITY = 0    # MediaPipe model complexity: 0=fastest, 1=balanced, 2=most accurate
 
@@ -31,13 +31,30 @@ MAX_JUMP_PX           = 150   # discard detection if player jumps more than this
 CROP_MARGIN           = 200   # pixel radius around last known position for cropped detection
 ANGLE_MATCH_THRESHOLD = 0.7   # min histogram correlation to reference frame (filters camera cuts)
 
+# ── Option A: Tracking Decoupling ─────────────────────────────────────────────
+MAX_SPEED_MS              = 10.0   # (reserved) court-space speed cap in m/s
+MIN_SEPARATION_PX         = 80     # (reserved) pixel-space separation for _try_reassign sanity check
+MIN_SEPARATION_M          = 0.2    # court-space distance (m) below which trackers are flagged as coupled
+COUPLING_FRAMES_THRESHOLD = 25     # consecutive coupling frames before warning is printed
+VERIFY_EVERY_N            = 150    # (reserved) periodic verification interval for Day 12
+COURT_BOUNDS_MARGIN_M     = 1.0    # tolerance beyond court edges for detection validation (metres)
+
 # ── Stats ─────────────────────────────────────────────────────────────────────
 T_RADIUS_M = 1.25   # distance from T within which a position counts as "at the T"
+
+# ── Zone Grid (3 columns × 3 rows) ───────────────────────────────────────────
+ZONE_COL_EDGES = [0.0, COURT_WIDTH_M / 3, 2 * COURT_WIDTH_M / 3, COURT_WIDTH_M]
+ZONE_ROW_EDGES = [0.0, COURT_LENGTH_M / 3, 2 * COURT_LENGTH_M / 3, COURT_LENGTH_M]
+ZONE_NAMES = [
+    ["Front-L", "Front-C", "Front-R"],
+    ["Mid-L",   "T",       "Mid-R"  ],
+    ["Back-L",  "Back-C",  "Back-R" ],
+]
 
 # ── Visualisation ─────────────────────────────────────────────────────────────
 HEATMAP_GRID_X  = 64    # heatmap cells across court width  (6.4 m → ~0.1 m/cell)
 HEATMAP_GRID_Y  = 100   # heatmap cells across court length (9.75 m → ~0.1 m/cell)
-HEATMAP_GAMMA   = 0.4   # gamma < 1 boosts mid-density areas; lower = more spread
+HEATMAP_GAMMA   = 0.25   # gamma < 1 boosts mid-density areas; lower = more spread
 PLAYER_COLORS   = ["red", "dodgerblue"]
 PLAYER_LABELS   = ["Player 1", "Player 2"]
 DEBUG_VIZ_EVERY = FRAME_SKIP   # update live debug plot every N processed frames

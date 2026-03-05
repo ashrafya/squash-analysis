@@ -18,6 +18,11 @@ from config import (
     HEATMAP_GAMMA,
     PLAYER_COLORS,
     PLAYER_LABELS,
+    ZONE_COL_EDGES,
+    ZONE_ROW_EDGES,
+    ZONE_NAMES,
+    T_Y,
+    T_RADIUS_M,
 )
 
 
@@ -75,18 +80,43 @@ def draw_court(ax):
     ax.text(COURT_WIDTH_M / 2, COURT_LENGTH_M + 0.15, "Back wall", ha="center", fontsize=8, color="gray")
 
 
-def plot_court_positions(xs1, ys1, xs2, ys2, title="Player Movement (Court Space)"):
-    fig, ax = plt.subplots(figsize=(6, 9))
+def draw_zone_overlay(ax, zone_stats):
+    """Draw 9-zone grid lines and percentage labels on an existing court axes.
+
+    The T zone gets a highlighted label; all others get a plain text box.
+    """
+    line_kw = dict(color="gray", linewidth=0.8, linestyle="--", alpha=0.6, zorder=5)
+    for x in ZONE_COL_EDGES[1:-1]:
+        ax.plot([x, x], [0, COURT_LENGTH_M], **line_kw)
+    for y in ZONE_ROW_EDGES[1:-1]:
+        ax.plot([0, COURT_WIDTH_M], [y, y], **line_kw)
+
+    for ri, row in enumerate(ZONE_NAMES):
+        y_mid = (ZONE_ROW_EDGES[ri] + ZONE_ROW_EDGES[ri + 1]) / 2
+        for ci, name in enumerate(row):
+            x_mid = (ZONE_COL_EDGES[ci] + ZONE_COL_EDGES[ci + 1]) / 2
+            pct = zone_stats.get(name, 0.0)
+            if name == "T":
+                ax.text(x_mid, y_mid, f"T\n{pct:.1f}%",
+                        ha="center", va="center", fontsize=8, fontweight="bold",
+                        color="white", zorder=7,
+                        bbox=dict(boxstyle="round,pad=0.25", facecolor="black", alpha=0.55))
+            else:
+                ax.text(x_mid, y_mid, f"{name}\n{pct:.1f}%",
+                        ha="center", va="center", fontsize=7, color="black", zorder=7,
+                        bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.6))
+
+
+# ── Private draw helpers (render onto a provided axes, no figure management) ──
+
+def _draw_court_positions(ax, xs1, ys1, xs2, ys2, title="Player Movement (Court Space)"):
     draw_court(ax)
     if xs1:
         ax.scatter(xs1, ys1, s=4, alpha=0.5, color=PLAYER_COLORS[0], zorder=5, label=PLAYER_LABELS[0])
     if xs2:
         ax.scatter(xs2, ys2, s=4, alpha=0.5, color=PLAYER_COLORS[1], zorder=5, label=PLAYER_LABELS[1])
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper right", fontsize=7)
     ax.set_title(title)
-    plt.tight_layout()
-    _save(fig, "court_positions.png")
-    plt.show()
 
 
 # Per-player colormaps: fully transparent at 0 density, opaque at peak
@@ -104,6 +134,11 @@ _PLAYER_CMAPS = [
     ]),
 ]
 
+_X_CENTERS = (np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[:-1] +
+              np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[1:]) / 2
+_Y_CENTERS = (np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[:-1] +
+              np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[1:]) / 2
+
 
 def _build_heatmap(xs, ys):
     x_bins = np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)
@@ -117,90 +152,227 @@ def _build_heatmap(xs, ys):
     return h
 
 
-def plot_heatmap(xs1, ys1, xs2, ys2, title="Player Heatmap"):
-    """Overlay a per-player Gaussian heatmap on the court diagram."""
-    x_centers = (np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[:-1] +
-                 np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[1:]) / 2
-    y_centers = (np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[:-1] +
-                 np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[1:]) / 2
-
-    datasets = [
-        (xs1, ys1, PLAYER_LABELS[0], _PLAYER_CMAPS[0], "heatmap_player1.png"),
-        (xs2, ys2, PLAYER_LABELS[1], _PLAYER_CMAPS[1], "heatmap_player2.png"),
-    ]
-    for xs, ys, label, cmap, fname in datasets:
-        if not xs:
-            continue
-        fig, ax = plt.subplots(figsize=(6, 9))
-        draw_court(ax)
-        h = _build_heatmap(xs, ys)
-
-        # Heatmap sits between court floor (zorder=1) and court lines (zorder=2)
-        ax.imshow(
-            h,
-            extent=[0, COURT_WIDTH_M, COURT_LENGTH_M, 0],
-            origin="upper",
-            aspect="auto",
-            cmap=cmap,
-            vmin=0, vmax=1,
-            zorder=1.5,
-        )
-
-        # Contour lines at 50 % and 80 % density, drawn above court lines
-        if h.max() > 0:
-            ax.contour(x_centers, y_centers, h,
-                       levels=[0.5, 0.8],
-                       colors=["white", "white"],
-                       linewidths=[1.0, 1.8],
-                       linestyles=["dashed", "solid"],
-                       zorder=4)
-
-        ax.set_title(f"{title} — {label}")
-        plt.tight_layout()
-        _save(fig, fname)
-        plt.show()
+def _draw_heatmap_on_ax(ax, xs, ys, cmap, zone_stats=None, title=""):
+    draw_court(ax)
+    h = _build_heatmap(xs, ys)
+    ax.imshow(
+        h,
+        extent=[0, COURT_WIDTH_M, COURT_LENGTH_M, 0],
+        origin="upper",
+        aspect="auto",
+        cmap=cmap,
+        vmin=0, vmax=1,
+        zorder=1.5,
+    )
+    if h.max() > 0:
+        ax.contour(_X_CENTERS, _Y_CENTERS, h,
+                   levels=[0.5, 0.8],
+                   colors=["white", "white"],
+                   linewidths=[1.0, 1.8],
+                   linestyles=["dashed", "solid"],
+                   zorder=4)
+    if zone_stats:
+        draw_zone_overlay(ax, zone_stats)
+    if title:
+        ax.set_title(title)
 
 
-def plot_histograms(xs1, ys1, xs2, ys2):
-    """2×2 histogram grid: Y and X court position distributions for both players."""
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    fig.suptitle("Position Distributions")
+def _draw_histograms(ax_y, ax_x, xs1, ys1, xs2, ys2):
+    """Draw overlaid Y and X court-position distributions for both players."""
     datasets = [
         (PLAYER_LABELS[0], PLAYER_COLORS[0], np.array(xs1), np.array(ys1)),
         (PLAYER_LABELS[1], PLAYER_COLORS[1], np.array(xs2), np.array(ys2)),
     ]
-    for row, (label, color, xs, ys) in enumerate(datasets):
-        ax = axes[row, 0]
-        ax.hist(ys, bins=np.linspace(0, COURT_LENGTH_M, 50), color=color, alpha=0.7,
-                label=f"μ={np.mean(ys):.2f} m")
-        ax.axvline(np.mean(ys), color=color, lw=1.5, ls="--")
-        ax.set_xlabel("Court Y (m)  ←front  |  back→")
-        ax.set_ylabel("Frame count")
-        ax.set_title(f"{label} — Y distribution")
-        ax.legend(fontsize=8)
+    for label, color, xs, ys in datasets:
+        if len(ys):
+            ax_y.hist(ys, bins=np.linspace(0, COURT_LENGTH_M, 50),
+                      color=color, alpha=0.55, label=f"{label}  μ={np.mean(ys):.2f} m")
+            ax_y.axvline(np.mean(ys), color=color, lw=1.5, ls="--")
+        if len(xs):
+            ax_x.hist(xs, bins=np.linspace(0, COURT_WIDTH_M, 40),
+                      color=color, alpha=0.55, label=f"{label}  μ={np.mean(xs):.2f} m")
+            ax_x.axvline(np.mean(xs), color=color, lw=1.5, ls="--")
 
-        ax = axes[row, 1]
-        ax.hist(xs, bins=np.linspace(0, COURT_WIDTH_M, 40), color=color, alpha=0.7,
-                label=f"μ={np.mean(xs):.2f} m")
-        ax.axvline(np.mean(xs), color=color, lw=1.5, ls="--")
-        ax.set_xlabel("Court X (m)  ←left  |  right→")
-        ax.set_ylabel("Frame count")
-        ax.set_title(f"{label} — X distribution")
-        ax.legend(fontsize=8)
+    ax_y.set_xlabel("Court Y (m)  ←front  |  back→")
+    ax_y.set_ylabel("Frame count")
+    ax_y.set_title("Y Distribution (both players)")
+    ax_y.legend(fontsize=8)
 
+    ax_x.set_xlabel("Court X (m)  ←left  |  right→")
+    ax_x.set_ylabel("Frame count")
+    ax_x.set_title("X Distribution (both players)")
+    ax_x.legend(fontsize=8)
+
+
+# ── Public plot functions — save to file, no plt.show() ──────────────────────
+
+def plot_court_positions(xs1, ys1, xs2, ys2, title="Player Movement (Court Space)"):
+    fig, ax = plt.subplots(figsize=(6, 9))
+    _draw_court_positions(ax, xs1, ys1, xs2, ys2, title)
+    plt.tight_layout()
+    _save(fig, "court_positions.png")
+    plt.close(fig)
+
+
+def plot_heatmap(xs1, ys1, xs2, ys2, title="Player Heatmap",
+                 zone_stats1=None, zone_stats2=None):
+    """Save a per-player Gaussian heatmap PNG for each player."""
+    datasets = [
+        (xs1, ys1, PLAYER_LABELS[0], _PLAYER_CMAPS[0], "heatmap_player1.png", zone_stats1),
+        (xs2, ys2, PLAYER_LABELS[1], _PLAYER_CMAPS[1], "heatmap_player2.png", zone_stats2),
+    ]
+    for xs, ys, label, cmap, fname, zstats in datasets:
+        if not xs:
+            continue
+        fig, ax = plt.subplots(figsize=(6, 9))
+        _draw_heatmap_on_ax(ax, xs, ys, cmap, zstats, title=f"{title} — {label}")
+        plt.tight_layout()
+        _save(fig, fname)
+        plt.close(fig)
+
+
+def plot_histograms(xs1, ys1, xs2, ys2):
+    """Save overlaid Y and X position distribution histograms for both players."""
+    fig, (ax_y, ax_x) = plt.subplots(1, 2, figsize=(14, 5))
+    fig.suptitle("Position Distributions")
+    _draw_histograms(ax_y, ax_x, xs1, ys1, xs2, ys2)
     plt.tight_layout()
     _save(fig, "histograms.png")
+    plt.close(fig)
+
+
+def plot_positions(xs1, ys1, xs2, ys2, background=None, title="Player Movement (Pixel Space)"):
+    fig = plt.figure(figsize=(10, 7))
+    if background is not None:
+        rgb = cv2.cvtColor(background, cv2.COLOR_BGR2RGB)
+        plt.imshow(rgb)
+    else:
+        plt.gca().invert_yaxis()
+    if xs1:
+        plt.scatter(xs1, ys1, s=2, alpha=0.5, color=PLAYER_COLORS[0], label=PLAYER_LABELS[0])
+    if xs2:
+        plt.scatter(xs2, ys2, s=2, alpha=0.5, color=PLAYER_COLORS[1], label=PLAYER_LABELS[1])
+    plt.legend()
+    plt.title(title)
+    plt.xlabel("X (pixels)")
+    plt.ylabel("Y (pixels)")
+    plt.tight_layout()
+    _save(fig, "pixel_positions.png")
+    plt.close(fig)
+
+
+_SMOOTH_WIN = 15   # rolling-average window for speed series display
+
+
+def _draw_timeseries(ax_speed, ax_dist, ax_y, ts1, ts2):
+    """Draw speed, distance-from-T, and court-depth time series for both players."""
+    for ts, label, color in [
+        (ts1, PLAYER_LABELS[0], PLAYER_COLORS[0]),
+        (ts2, PLAYER_LABELS[1], PLAYER_COLORS[1]),
+    ]:
+        if ts is None:
+            continue
+        t     = ts["time_s"]
+        speed = ts["speed_ms"]
+
+        # Light rolling average so the speed trace is readable
+        if len(speed) >= _SMOOTH_WIN:
+            kernel = np.ones(_SMOOTH_WIN) / _SMOOTH_WIN
+            speed  = np.convolve(speed, kernel, mode="same")
+
+        ax_speed.plot(t, speed,            color=color, lw=1.2, alpha=0.85, label=label)
+        ax_dist.plot( t, ts["dist_to_t_m"], color=color, lw=1.0, alpha=0.8,  label=label)
+        ax_y.plot(    t, ts["y_m"],          color=color, lw=1.0, alpha=0.8,  label=label)
+
+    ax_speed.set_xlabel("Time (s)")
+    ax_speed.set_ylabel("Speed (m/s)")
+    ax_speed.set_title("Speed over time")
+    ax_speed.legend(fontsize=8)
+
+    ax_dist.axhline(T_RADIUS_M, color="gray", lw=0.8, ls="--",
+                    label=f"T radius ({T_RADIUS_M} m)")
+    ax_dist.set_xlabel("Time (s)")
+    ax_dist.set_ylabel("Distance from T (m)")
+    ax_dist.set_title("Distance from T over time")
+    ax_dist.legend(fontsize=8)
+
+    short_y = T_Y
+    ax_y.axhline(short_y, color="gray", lw=0.8, ls="--",
+                 label=f"Short line ({short_y:.2f} m)")
+    ax_y.invert_yaxis()   # front wall (y=0) at top, matching court diagram
+    ax_y.set_xlabel("Time (s)")
+    ax_y.set_ylabel("Court depth Y (m)")
+    ax_y.set_title("Court depth over time")
+    ax_y.legend(fontsize=8)
+
+
+def plot_timeseries(ts1, ts2):
+    """Save time-series plots (speed, dist-from-T, Y position) to file."""
+    fig, (ax_speed, ax_dist, ax_y) = plt.subplots(1, 3, figsize=(18, 5))
+    fig.suptitle("Time Series Analysis")
+    _draw_timeseries(ax_speed, ax_dist, ax_y, ts1, ts2)
+    plt.tight_layout()
+    _save(fig, "timeseries.png")
+    plt.close(fig)
+
+
+def show_summary(court_xs1, court_ys1, court_xs2, court_ys2,
+                 zone_stats1=None, zone_stats2=None,
+                 ts1=None, ts2=None):
+    """Display all key analysis plots in a single window.
+
+    Layout (3 rows × 6 virtual columns):
+      Row 0 (portrait): Court scatter | Heatmap P1 | Heatmap P2
+      Row 1 (landscape): Y histogram (both) | X histogram (both)
+      Row 2 (landscape): Speed | Dist from T | Court depth  [if ts provided]
+    """
+    has_ts = ts1 is not None or ts2 is not None
+    n_rows = 3 if has_ts else 2
+    height_ratios = [1.6, 1, 1] if has_ts else [1.6, 1]
+
+    fig = plt.figure(figsize=(18, 26 if has_ts else 20))
+    gs = fig.add_gridspec(
+        n_rows, 6,
+        height_ratios=height_ratios,
+        hspace=0.45,
+        wspace=0.35,
+    )
+
+    # Row 0 — three portrait court panels
+    ax_court = fig.add_subplot(gs[0, 0:2])
+    ax_h1    = fig.add_subplot(gs[0, 2:4])
+    ax_h2    = fig.add_subplot(gs[0, 4:6])
+
+    # Row 1 — two landscape histogram panels
+    ax_y = fig.add_subplot(gs[1, 0:3])
+    ax_x = fig.add_subplot(gs[1, 3:6])
+
+    _draw_court_positions(ax_court, court_xs1, court_ys1, court_xs2, court_ys2,
+                          title="Player Positions")
+    if court_xs1:
+        _draw_heatmap_on_ax(ax_h1, court_xs1, court_ys1, _PLAYER_CMAPS[0],
+                            zone_stats1, title=f"Heatmap — {PLAYER_LABELS[0]}")
+    if court_xs2:
+        _draw_heatmap_on_ax(ax_h2, court_xs2, court_ys2, _PLAYER_CMAPS[1],
+                            zone_stats2, title=f"Heatmap — {PLAYER_LABELS[1]}")
+    _draw_histograms(ax_y, ax_x, court_xs1, court_ys1, court_xs2, court_ys2)
+
+    # Row 2 — three time series panels (optional)
+    if has_ts:
+        ax_speed = fig.add_subplot(gs[2, 0:2])
+        ax_dist  = fig.add_subplot(gs[2, 2:4])
+        ax_depth = fig.add_subplot(gs[2, 4:6])
+        _draw_timeseries(ax_speed, ax_dist, ax_depth, ts1, ts2)
+
+    fig.suptitle("Match Analysis Summary", fontsize=15, fontweight="bold")
     plt.show()
 
+
+# ── Validation-only function (used by validate_ground_fix.py) ─────────────────
 
 def plot_heatmap_comparison(hxs1, hys1, hxs2, hys2, gxs1, gys1, gxs2, gys2,
                              output_dir=None):
     """2×2 heatmap grid: rows=players, cols=hip(old)/heel-ankle(new). Saves and closes."""
-    x_centers = (np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[:-1] +
-                 np.linspace(0, COURT_WIDTH_M,  HEATMAP_GRID_X + 1)[1:]) / 2
-    y_centers = (np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[:-1] +
-                 np.linspace(0, COURT_LENGTH_M, HEATMAP_GRID_Y + 1)[1:]) / 2
-
     fig, axes = plt.subplots(2, 2, figsize=(12, 18))
     fig.suptitle("Heatmap Comparison: Hip (old) vs Heel/Ankle (new)", fontsize=13)
 
@@ -213,19 +385,7 @@ def plot_heatmap_comparison(hxs1, hys1, hxs2, hys2, gxs1, gys1, gxs2, gys2,
             (grnd_data, "Heel/Ankle (new)"),
         ]):
             ax = axes[row, col]
-            draw_court(ax)
-            h = _build_heatmap(xs, ys)
-            ax.imshow(h, extent=[0, COURT_WIDTH_M, COURT_LENGTH_M, 0],
-                      origin="upper", aspect="auto", cmap=cmap,
-                      vmin=0, vmax=1, zorder=1.5)
-            if h.max() > 0:
-                ax.contour(x_centers, y_centers, h,
-                           levels=[0.5, 0.8],
-                           colors=["white", "white"],
-                           linewidths=[1.0, 1.8],
-                           linestyles=["dashed", "solid"],
-                           zorder=4)
-            ax.set_title(f"{label} — {method}")
+            _draw_heatmap_on_ax(ax, xs, ys, cmap, title=f"{label} — {method}")
 
     plt.tight_layout()
     fname = "heatmap_comparison.png"
@@ -237,25 +397,3 @@ def plot_heatmap_comparison(hxs1, hys1, hxs2, hys2, gxs1, gys1, gxs2, gys2,
     else:
         _save(fig, fname)
     plt.close(fig)
-
-
-def plot_positions(xs1, ys1, xs2, ys2, background=None, title="Player Movement (Pixel Space)"):
-    fig = plt.figure(figsize=(10, 7))
-
-    if background is not None:
-        rgb = cv2.cvtColor(background, cv2.COLOR_BGR2RGB)
-        plt.imshow(rgb)
-    else:
-        plt.gca().invert_yaxis()  # image coordinate system
-
-    if xs1:
-        plt.scatter(xs1, ys1, s=2, alpha=0.5, color=PLAYER_COLORS[0], label=PLAYER_LABELS[0])
-    if xs2:
-        plt.scatter(xs2, ys2, s=2, alpha=0.5, color=PLAYER_COLORS[1], label=PLAYER_LABELS[1])
-    plt.legend()
-    plt.title(title)
-    plt.xlabel("X (pixels)")
-    plt.ylabel("Y (pixels)")
-    plt.tight_layout()
-    _save(fig, "pixel_positions.png")
-    plt.show()

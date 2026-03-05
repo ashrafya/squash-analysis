@@ -298,21 +298,64 @@ Smooth ball trajectory overlaid on the top-down court view.
     },
     {
         "day":    12,
-        "title":  "Day 12 — Rally Segmentation",
+        "title":  "Day 12 — Player Tracking: Option B & C Experiments",
         "labels": ["week-2"],
         "closed": False,
         "body": """\
 ## Objective
-Split the match into individual rallies automatically.
+Eliminate player identity coupling at its root by replacing (or augmenting) the
+MediaPipe dual-crop trackers with true multi-person detection.
 
-## Tasks
-- [ ] Detect serve events: ball near service box + player action initiates
-- [ ] Detect rally end: ball enters tin zone or leaves court bounds
-- [ ] Handle let/stroke situations gracefully (flag as ambiguous)
-- [ ] Export a rally index: `[{rally_id, start_frame, end_frame, duration_s}]`
+Day 11 shipped **Option A** (velocity cap + coupling counter + periodic re-assignment),
+which reduces but does not eliminate coupling. This day experiments with two
+architecturally stronger alternatives.
+
+---
+
+## Option B — Full rewrite with YOLOv8-pose (recommended)
+
+YOLOv8-pose detects all people in a single forward pass and assigns keypoints
+per bounding box, making coupling architecturally impossible.
+
+### Tasks
+- [ ] `pip install ultralytics` and smoke-test `yolov8n-pose.pt` on a sample frame
+- [ ] Replace `extract_pose.py` tracking loop with YOLOv8-pose inference
+  - Full frame → YOLOv8-pose → `[{bbox, keypoints_17}, ...]`
+  - Hungarian matching (scipy `linear_sum_assignment`) on Euclidean displacement
+    from last known positions to assign detections to (P1, P2) each frame
+- [ ] Port `get_ground_position` heel/ankle fallback tiers to COCO keypoint indices
+  (COCO 15=L_ankle, 16=R_ankle; no heel landmark — use ankles only)
+- [ ] Validate: run both pipelines on the same clip and compare court-space traces
+- [ ] Benchmark: measure frames/second on CPU vs Option A baseline
+
+### Expected outcome
+No more coupling events; cleaner traces near the T junction where players cross.
+
+---
+
+## Option C — Hybrid (MediaPipe crop + YOLO verifier)
+
+Keep the fast MediaPipe crop trackers for per-frame speed but run YOLOv8-pose
+every `VERIFY_EVERY_N` frames as a ground-truth anchor.
+
+### Tasks
+- [ ] Add YOLOv8-pose as an optional dependency (`pip install ultralytics`)
+- [ ] Implement `_yolo_verify(frame, last_pos_1, last_pos_2)` — runs full-frame
+  YOLO, Hungarian-matches detections, returns corrected (P1, P2) positions
+- [ ] Replace `_try_reassign` (which uses the fragile top/bottom split) with
+  `_yolo_verify` in the periodic verification sweep
+- [ ] Guard with `try/except ImportError` so the pipeline still runs without
+  `ultralytics` installed (falls back to Option A behaviour)
+- [ ] Compare coupling event counts: Option A baseline vs Option C on full match
+
+### Expected outcome
+Near-zero coupling at a fraction of Option B's compute cost.
+
+---
 
 ## Deliverable
-Automatic rally segmentation working on a full match video.
+At least one of Option B or C fully working on a complete match video, with a
+side-by-side court-trace comparison showing the improvement over Option A.
 """,
     },
     {

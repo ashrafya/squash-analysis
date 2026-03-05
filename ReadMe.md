@@ -213,18 +213,35 @@ Deliverable:
 
 ---
 
-### Day 12 — Rally Segmentation
+### Day 12 — Player Tracking: Option B & C Experiments
 
-**Objective:** Split the match into individual rallies automatically
+**Objective:** Eliminate player identity coupling at its root by replacing (or augmenting) the MediaPipe dual-crop trackers with true multi-person detection
+
+Day 11 shipped **Option A** (velocity cap + coupling counter + periodic re-assignment via 2×2 Hungarian matching), which reduces but does not eliminate coupling. This day experiments with two architecturally stronger alternatives.
+
+**Option B — Full rewrite with YOLOv8-pose (recommended)**
+
+YOLOv8-pose detects all people in a single forward pass, making coupling architecturally impossible.
 
 Tasks:
-- Detect serve events: ball near service box + player action initiates
-- Detect rally end: ball enters tin zone or leaves court bounds
-- Handle let/stroke situations gracefully (flag as ambiguous)
-- Export a rally index: `[{rally_id, start_frame, end_frame, duration_s}]`
+- `pip install ultralytics` and smoke-test `yolov8n-pose.pt` on a sample frame
+- Replace `extract_pose.py` tracking loop with YOLOv8-pose inference: full frame → detections → Hungarian matching to (P1, P2) by minimum displacement
+- Port `get_ground_position` heel/ankle fallback tiers to COCO keypoint indices (COCO 15=L_ankle, 16=R_ankle)
+- Validate: run both pipelines on the same clip and compare court-space traces
+- Benchmark: measure frames/second on CPU vs Option A baseline
+
+**Option C — Hybrid (MediaPipe crop + YOLO verifier)**
+
+Keep the fast MediaPipe crop trackers but use YOLOv8-pose every `VERIFY_EVERY_N` frames as a ground-truth anchor.
+
+Tasks:
+- Implement `_yolo_verify(frame, last_pos_1, last_pos_2)` — full-frame YOLO + Hungarian re-assignment
+- Replace `_try_reassign` (fragile top/bottom split) with `_yolo_verify` in the periodic verification sweep
+- Guard with `try/except ImportError` so the pipeline still runs without `ultralytics` installed (falls back to Option A)
+- Compare coupling event counts: Option A baseline vs Option C on full match
 
 Deliverable:
-- Automatic rally segmentation working on a full match video
+- At least one of Option B or C fully working on a complete match video, with a side-by-side court-trace comparison showing the improvement over Option A
 
 ---
 

@@ -1,0 +1,970 @@
+[
+  {
+    "timestamp": "2026-03-05T01:02:11",
+    "video": "women.mp4",
+    "frame_cap": 5000,
+    "frame_skip": 2,
+    "n_positions": {
+      "p1": 1357,
+      "p2": 1595
+    },
+    "player1": {
+      "duration_s": 108.6,
+      "total_distance_m": 189.5,
+      "avg_speed_ms": 1.75,
+      "peak_speed_ms": 4.49,
+      "t_time_pct": 28.2,
+      "front_pct": 79.7,
+      "back_pct": 20.3
+    },
+    "player2": {
+      "duration_s": 127.6,
+      "total_distance_m": 214.5,
+      "avg_speed_ms": 1.68,
+      "peak_speed_ms": 4.46,
+      "t_time_pct": 29.4,
+      "front_pct": 80.8,
+      "back_pct": 19.2
+    }
+  },
+  {
+    "timestamp": "2026-03-05T01:30:01",
+    "video": "women.mp4",
+    "frame_cap": 200,
+    "frame_skip": 2,
+    "n_positions": {
+      "p1": 99,
+      "p2": 99
+    },
+    "player1": {
+      "duration_s": 7.9,
+      "total_distance_m": 0.0,
+      "avg_speed_ms": 0.0,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 7.9,
+      "total_distance_m": 6.9,
+      "avg_speed_ms": 0.87,
+      "peak_speed_ms": 2.58,
+      "t_time_pct": 51.5,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    }
+  },
+  {
+    "timestamp": "2026-03-05T01:31:46",
+    "video": "women.mp4",
+    "frame_cap": 2000,
+    "frame_skip": 2,
+    "n_positions": {
+      "p1": 613,
+      "p2": 613
+    },
+    "player1": {
+      "duration_s": 49.0,
+      "total_distance_m": 96.8,
+      "avg_speed_ms": 1.97,
+      "peak_speed_ms": 4.62,
+      "t_time_pct": 25.4,
+      "front_pct": 86.1,
+      "back_pct": 13.9
+    },
+    "player2": {
+      "duration_s": 49.0,
+      "total_distance_m": 89.7,
+      "avg_speed_ms": 1.83,
+      "peak_speed_ms": 4.62,
+      "t_time_pct": 35.6,
+      "front_pct": 86.1,
+      "back_pct": 13.9
+    }
+  },
+  {
+    "timestamp": "2026-03-05T01:44:56",
+    "video": "women.mp4",
+    "frame_cap": null,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 3328,
+      "p2": 3328
+    },
+    "player1": {
+      "duration_s": 665.6,
+      "total_distance_m": 161.8,
+      "avg_speed_ms": 0.24,
+      "peak_speed_ms": 1.58,
+      "t_time_pct": 5.0,
+      "front_pct": 14.7,
+      "back_pct": 85.3
+    },
+    "player2": {
+      "duration_s": 665.6,
+      "total_distance_m": 149.8,
+      "avg_speed_ms": 0.23,
+      "peak_speed_ms": 1.56,
+      "t_time_pct": 5.8,
+      "front_pct": 15.0,
+      "back_pct": 85.0
+    }
+  },
+  {
+    "timestamp": "2026-03-05T01:53:42",
+    "video": "women.mp4",
+    "frame_cap": 5000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 694,
+      "p2": 694
+    },
+    "player1": {
+      "duration_s": 138.8,
+      "total_distance_m": 152.9,
+      "avg_speed_ms": 1.1,
+      "peak_speed_ms": 3.35,
+      "t_time_pct": 24.9,
+      "front_pct": 69.2,
+      "back_pct": 30.8
+    },
+    "player2": {
+      "duration_s": 138.8,
+      "total_distance_m": 141.5,
+      "avg_speed_ms": 1.02,
+      "peak_speed_ms": 3.33,
+      "t_time_pct": 28.0,
+      "front_pct": 69.5,
+      "back_pct": 30.5
+    }
+  },
+  {
+    "timestamp": "2026-03-05T01:59:36",
+    "video": "women.mp4",
+    "frame_cap": 5000,
+    "frame_skip": 1,
+    "n_positions": {
+      "p1": 3470,
+      "p2": 3470
+    },
+    "player1": {
+      "duration_s": 138.8,
+      "total_distance_m": 156.8,
+      "avg_speed_ms": 1.13,
+      "peak_speed_ms": 4.25,
+      "t_time_pct": 9.1,
+      "front_pct": 28.4,
+      "back_pct": 71.6
+    },
+    "player2": {
+      "duration_s": 138.8,
+      "total_distance_m": 148.7,
+      "avg_speed_ms": 1.07,
+      "peak_speed_ms": 4.22,
+      "t_time_pct": 10.6,
+      "front_pct": 29.1,
+      "back_pct": 70.9
+    }
+  },
+  {
+    "timestamp": "2026-03-05T03:42:33",
+    "video": "women.mp4",
+    "frame_cap": 1500,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 230,
+      "p2": 230
+    },
+    "player1": {
+      "duration_s": 45.8,
+      "total_distance_m": 51.9,
+      "avg_speed_ms": 1.13,
+      "peak_speed_ms": 3.25,
+      "t_time_pct": 31.3,
+      "front_pct": 14.8,
+      "back_pct": 85.2
+    },
+    "player2": {
+      "duration_s": 45.8,
+      "total_distance_m": 38.7,
+      "avg_speed_ms": 0.85,
+      "peak_speed_ms": 2.94,
+      "t_time_pct": 33.0,
+      "front_pct": 1.3,
+      "back_pct": 98.7
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 14.3,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 22.2,
+      "Mid-R": 2.2,
+      "Back-L": 15.7,
+      "Back-C": 23.9,
+      "Back-R": 20.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 25.2,
+      "Mid-R": 2.2,
+      "Back-L": 18.3,
+      "Back-C": 32.6,
+      "Back-R": 20.0
+    }
+  },
+  {
+    "timestamp": "2026-03-05T04:04:10",
+    "video": "women.mp4",
+    "frame_cap": 1500,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 230,
+      "p2": 230
+    },
+    "player1": {
+      "duration_s": 45.8,
+      "total_distance_m": 51.9,
+      "avg_speed_ms": 1.13,
+      "peak_speed_ms": 3.25,
+      "t_time_pct": 31.3,
+      "front_pct": 14.8,
+      "back_pct": 85.2
+    },
+    "player2": {
+      "duration_s": 45.8,
+      "total_distance_m": 38.7,
+      "avg_speed_ms": 0.85,
+      "peak_speed_ms": 2.94,
+      "t_time_pct": 33.0,
+      "front_pct": 1.3,
+      "back_pct": 98.7
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 14.3,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 22.2,
+      "Mid-R": 2.2,
+      "Back-L": 15.7,
+      "Back-C": 23.9,
+      "Back-R": 20.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 25.2,
+      "Mid-R": 2.2,
+      "Back-L": 18.3,
+      "Back-C": 32.6,
+      "Back-R": 20.0
+    }
+  },
+  {
+    "timestamp": "2026-03-05T04:13:57",
+    "video": "women.mp4",
+    "frame_cap": 1500,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 230,
+      "p2": 230
+    },
+    "player1": {
+      "duration_s": 45.8,
+      "total_distance_m": 51.9,
+      "avg_speed_ms": 1.13,
+      "peak_speed_ms": 3.25,
+      "t_time_pct": 31.3,
+      "front_pct": 14.8,
+      "back_pct": 85.2
+    },
+    "player2": {
+      "duration_s": 45.8,
+      "total_distance_m": 38.7,
+      "avg_speed_ms": 0.85,
+      "peak_speed_ms": 2.94,
+      "t_time_pct": 33.0,
+      "front_pct": 1.3,
+      "back_pct": 98.7
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 14.3,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 22.2,
+      "Mid-R": 2.2,
+      "Back-L": 15.7,
+      "Back-C": 23.9,
+      "Back-R": 20.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 25.2,
+      "Mid-R": 2.2,
+      "Back-L": 18.3,
+      "Back-C": 32.6,
+      "Back-R": 20.0
+    }
+  },
+  {
+    "timestamp": "2026-03-05T04:21:04",
+    "video": "women.mp4",
+    "frame_cap": 1500,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 230,
+      "p2": 230
+    },
+    "player1": {
+      "duration_s": 45.8,
+      "total_distance_m": 51.9,
+      "avg_speed_ms": 1.13,
+      "peak_speed_ms": 3.25,
+      "t_time_pct": 31.3,
+      "front_pct": 14.8,
+      "back_pct": 85.2
+    },
+    "player2": {
+      "duration_s": 45.8,
+      "total_distance_m": 38.7,
+      "avg_speed_ms": 0.85,
+      "peak_speed_ms": 2.94,
+      "t_time_pct": 33.0,
+      "front_pct": 1.3,
+      "back_pct": 98.7
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 14.3,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 22.2,
+      "Mid-R": 2.2,
+      "Back-L": 15.7,
+      "Back-C": 23.9,
+      "Back-R": 20.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 1.7,
+      "T": 25.2,
+      "Mid-R": 2.2,
+      "Back-L": 18.3,
+      "Back-C": 32.6,
+      "Back-R": 20.0
+    }
+  },
+  {
+    "timestamp": "2026-03-05T04:27:47",
+    "video": "women.mp4",
+    "frame_cap": null,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 3328,
+      "p2": 3328
+    },
+    "player1": {
+      "duration_s": 665.4,
+      "total_distance_m": 417.7,
+      "avg_speed_ms": 0.63,
+      "peak_speed_ms": 2.56,
+      "t_time_pct": 15.0,
+      "front_pct": 8.4,
+      "back_pct": 91.6
+    },
+    "player2": {
+      "duration_s": 665.4,
+      "total_distance_m": 404.5,
+      "avg_speed_ms": 0.61,
+      "peak_speed_ms": 2.55,
+      "t_time_pct": 15.1,
+      "front_pct": 7.5,
+      "back_pct": 92.5
+    },
+    "zones_player1": {
+      "Front-L": 0.2,
+      "Front-C": 1.4,
+      "Front-R": 0.3,
+      "Mid-L": 5.0,
+      "T": 12.6,
+      "Mid-R": 2.5,
+      "Back-L": 55.9,
+      "Back-C": 15.9,
+      "Back-R": 6.2
+    },
+    "zones_player2": {
+      "Front-L": 0.2,
+      "Front-C": 0.5,
+      "Front-R": 0.3,
+      "Mid-L": 5.0,
+      "T": 12.8,
+      "Mid-R": 2.5,
+      "Back-L": 56.1,
+      "Back-C": 16.5,
+      "Back-R": 6.2
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:08:30",
+    "video": "women.mp4",
+    "frame_cap": 1500,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 230,
+      "p2": 230
+    },
+    "player1": {
+      "duration_s": 45.8,
+      "total_distance_m": 0.0,
+      "avg_speed_ms": 0.0,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 45.8,
+      "total_distance_m": 36.9,
+      "avg_speed_ms": 0.8,
+      "peak_speed_ms": 2.82,
+      "t_time_pct": 37.0,
+      "front_pct": 1.3,
+      "back_pct": 98.7
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 100.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 2.2,
+      "T": 23.5,
+      "Mid-R": 2.2,
+      "Back-L": 27.4,
+      "Back-C": 41.7,
+      "Back-R": 3.0
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:09:52",
+    "video": "men.mp4",
+    "frame_cap": 3000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 425,
+      "p2": 425
+    },
+    "player1": {
+      "duration_s": 84.8,
+      "total_distance_m": 18.6,
+      "avg_speed_ms": 0.22,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 84.8,
+      "total_distance_m": 75.5,
+      "avg_speed_ms": 0.89,
+      "peak_speed_ms": 2.81,
+      "t_time_pct": 24.9,
+      "front_pct": 13.4,
+      "back_pct": 86.6
+    },
+    "zones_player1": {
+      "Front-L": 70.6,
+      "Front-C": 29.4,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 5.6,
+      "T": 19.8,
+      "Mid-R": 5.9,
+      "Back-L": 8.0,
+      "Back-C": 52.2,
+      "Back-R": 8.5
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:13:58",
+    "video": "men.mp4",
+    "frame_cap": 3000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 425,
+      "p2": 425
+    },
+    "player1": {
+      "duration_s": 84.8,
+      "total_distance_m": 18.6,
+      "avg_speed_ms": 0.22,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 84.8,
+      "total_distance_m": 78.8,
+      "avg_speed_ms": 0.93,
+      "peak_speed_ms": 3.09,
+      "t_time_pct": 33.2,
+      "front_pct": 10.1,
+      "back_pct": 89.9
+    },
+    "zones_player1": {
+      "Front-L": 70.6,
+      "Front-C": 29.4,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 3.5,
+      "T": 28.9,
+      "Mid-R": 0.7,
+      "Back-L": 8.7,
+      "Back-C": 50.8,
+      "Back-R": 7.3
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:18:20",
+    "video": "men.mp4",
+    "frame_cap": 3000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 425,
+      "p2": 425
+    },
+    "player1": {
+      "duration_s": 84.8,
+      "total_distance_m": 0.0,
+      "avg_speed_ms": 0.0,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 84.8,
+      "total_distance_m": 75.6,
+      "avg_speed_ms": 0.89,
+      "peak_speed_ms": 2.87,
+      "t_time_pct": 32.9,
+      "front_pct": 10.1,
+      "back_pct": 89.9
+    },
+    "zones_player1": {
+      "Front-L": 100.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 2.6,
+      "T": 28.7,
+      "Mid-R": 0.7,
+      "Back-L": 6.4,
+      "Back-C": 54.4,
+      "Back-R": 7.3
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:19:17",
+    "video": "men.mp4",
+    "frame_cap": 1000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 152,
+      "p2": 152
+    },
+    "player1": {
+      "duration_s": 30.2,
+      "total_distance_m": 0.0,
+      "avg_speed_ms": 0.0,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 30.2,
+      "total_distance_m": 22.8,
+      "avg_speed_ms": 0.75,
+      "peak_speed_ms": 2.43,
+      "t_time_pct": 34.2,
+      "front_pct": 11.2,
+      "back_pct": 88.8
+    },
+    "zones_player1": {
+      "Front-L": 100.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 32.9,
+      "Mid-R": 0.0,
+      "Back-L": 11.2,
+      "Back-C": 44.7,
+      "Back-R": 11.2
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:19:53",
+    "video": "men.mp4",
+    "frame_cap": 1000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 152,
+      "p2": 152
+    },
+    "player1": {
+      "duration_s": 30.2,
+      "total_distance_m": 0.0,
+      "avg_speed_ms": 0.0,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 30.2,
+      "total_distance_m": 22.8,
+      "avg_speed_ms": 0.75,
+      "peak_speed_ms": 2.43,
+      "t_time_pct": 34.2,
+      "front_pct": 11.2,
+      "back_pct": 88.8
+    },
+    "zones_player1": {
+      "Front-L": 100.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 32.9,
+      "Mid-R": 0.0,
+      "Back-L": 11.2,
+      "Back-C": 44.7,
+      "Back-R": 11.2
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:28:28",
+    "video": "men.mp4",
+    "frame_cap": 1000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 152,
+      "p2": 152
+    },
+    "player1": {
+      "duration_s": 30.2,
+      "total_distance_m": 0.0,
+      "avg_speed_ms": 0.0,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 30.2,
+      "total_distance_m": 22.8,
+      "avg_speed_ms": 0.75,
+      "peak_speed_ms": 2.43,
+      "t_time_pct": 34.2,
+      "front_pct": 11.2,
+      "back_pct": 88.8
+    },
+    "zones_player1": {
+      "Front-L": 100.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 32.9,
+      "Mid-R": 0.0,
+      "Back-L": 11.2,
+      "Back-C": 44.7,
+      "Back-R": 11.2
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:37:01",
+    "video": "men.mp4",
+    "frame_cap": 1000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 152,
+      "p2": 152
+    },
+    "player1": {
+      "duration_s": 30.2,
+      "total_distance_m": 26.0,
+      "avg_speed_ms": 0.86,
+      "peak_speed_ms": 3.25,
+      "t_time_pct": 39.5,
+      "front_pct": 18.4,
+      "back_pct": 81.6
+    },
+    "player2": {
+      "duration_s": 30.2,
+      "total_distance_m": 28.3,
+      "avg_speed_ms": 0.94,
+      "peak_speed_ms": 3.31,
+      "t_time_pct": 50.0,
+      "front_pct": 9.2,
+      "back_pct": 90.8
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 11.8,
+      "T": 31.6,
+      "Mid-R": 11.2,
+      "Back-L": 0.0,
+      "Back-C": 27.0,
+      "Back-R": 18.4
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 3.9,
+      "T": 46.7,
+      "Mid-R": 5.3,
+      "Back-L": 8.6,
+      "Back-C": 23.7,
+      "Back-R": 11.8
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:37:55",
+    "video": "men.mp4",
+    "frame_cap": 1000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 152,
+      "p2": 152
+    },
+    "player1": {
+      "duration_s": 30.2,
+      "total_distance_m": 0.0,
+      "avg_speed_ms": 0.0,
+      "peak_speed_ms": 0.0,
+      "t_time_pct": 0.0,
+      "front_pct": 100.0,
+      "back_pct": 0.0
+    },
+    "player2": {
+      "duration_s": 30.2,
+      "total_distance_m": 22.8,
+      "avg_speed_ms": 0.75,
+      "peak_speed_ms": 2.43,
+      "t_time_pct": 34.2,
+      "front_pct": 11.2,
+      "back_pct": 88.8
+    },
+    "zones_player1": {
+      "Front-L": 100.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 0.0,
+      "Mid-R": 0.0,
+      "Back-L": 0.0,
+      "Back-C": 0.0,
+      "Back-R": 0.0
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 0.0,
+      "T": 32.9,
+      "Mid-R": 0.0,
+      "Back-L": 11.2,
+      "Back-C": 44.7,
+      "Back-R": 11.2
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:42:54",
+    "video": "men.mp4",
+    "frame_cap": null,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 1532,
+      "p2": 1532
+    },
+    "player1": {
+      "duration_s": 306.2,
+      "total_distance_m": 321.7,
+      "avg_speed_ms": 1.05,
+      "peak_speed_ms": 3.72,
+      "t_time_pct": 33.6,
+      "front_pct": 17.5,
+      "back_pct": 82.5
+    },
+    "player2": {
+      "duration_s": 306.2,
+      "total_distance_m": 327.0,
+      "avg_speed_ms": 1.07,
+      "peak_speed_ms": 3.69,
+      "t_time_pct": 47.3,
+      "front_pct": 16.5,
+      "back_pct": 83.5
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 0.5,
+      "Front-R": 0.5,
+      "Mid-L": 8.4,
+      "T": 31.8,
+      "Mid-R": 9.5,
+      "Back-L": 13.4,
+      "Back-C": 25.0,
+      "Back-R": 11.0
+    },
+    "zones_player2": {
+      "Front-L": 1.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 6.2,
+      "T": 42.6,
+      "Mid-R": 4.6,
+      "Back-L": 8.0,
+      "Back-C": 31.0,
+      "Back-R": 6.7
+    }
+  },
+  {
+    "timestamp": "2026-03-05T05:45:36",
+    "video": "men.mp4",
+    "frame_cap": 1000,
+    "frame_skip": 5,
+    "n_positions": {
+      "p1": 152,
+      "p2": 152
+    },
+    "player1": {
+      "duration_s": 30.2,
+      "total_distance_m": 26.0,
+      "avg_speed_ms": 0.86,
+      "peak_speed_ms": 3.25,
+      "t_time_pct": 39.5,
+      "front_pct": 18.4,
+      "back_pct": 81.6
+    },
+    "player2": {
+      "duration_s": 30.2,
+      "total_distance_m": 28.3,
+      "avg_speed_ms": 0.94,
+      "peak_speed_ms": 3.31,
+      "t_time_pct": 50.0,
+      "front_pct": 9.2,
+      "back_pct": 90.8
+    },
+    "zones_player1": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 11.8,
+      "T": 31.6,
+      "Mid-R": 11.2,
+      "Back-L": 0.0,
+      "Back-C": 27.0,
+      "Back-R": 18.4
+    },
+    "zones_player2": {
+      "Front-L": 0.0,
+      "Front-C": 0.0,
+      "Front-R": 0.0,
+      "Mid-L": 3.9,
+      "T": 46.7,
+      "Mid-R": 5.3,
+      "Back-L": 8.6,
+      "Back-C": 23.7,
+      "Back-R": 11.8
+    }
+  }
+]
