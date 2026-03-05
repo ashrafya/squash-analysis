@@ -32,7 +32,7 @@ from video_utils import load_video
 from calibrate import get_homography, apply_homography
 from plot_utils import draw_court
 from config import (
-    VIDEO_PATH, VIDEO_FPS, FRAME_CAP, FRAME_SKIP,
+    VIDEO_PATH, VIDEO_FPS, FRAME_CAP, BALL_FRAME_SKIP,
     OUTPUT_DIR, COURT_WIDTH_M, COURT_LENGTH_M, COURT_BOUNDS_MARGIN_M,
     DEBUG_VIZ_EVERY, ANGLE_MATCH_THRESHOLD,
 )
@@ -295,7 +295,7 @@ def main(debug=False, calibrate=False, reuse=False):
     with tqdm(total=total, unit="frame") as pbar:
         while cap.isOpened():
             video_ok = True
-            for _ in range(FRAME_SKIP - 1):
+            for _ in range(BALL_FRAME_SKIP - 1):
                 if not cap.grab():
                     video_ok = False
                     break
@@ -311,7 +311,7 @@ def main(debug=False, calibrate=False, reuse=False):
             corr = cv2.compareHist(ref_hist, _compute_hist(frame), cv2.HISTCMP_CORREL)
             if corr < ANGLE_MATCH_THRESHOLD:
                 skipped += 1
-                pbar.update(FRAME_SKIP)
+                pbar.update(BALL_FRAME_SKIP)
                 continue
 
             frames_checked += 1
@@ -330,10 +330,10 @@ def main(debug=False, calibrate=False, reuse=False):
                     confidence_arr.append(conf)
                     method_arr.append(method)
 
-            pbar.update(FRAME_SKIP)
+            pbar.update(BALL_FRAME_SKIP)
             pbar.set_postfix(detected=len(xs), skipped=skipped)
 
-            if debug and frame_idx % (FRAME_SKIP * DEBUG_VIZ_EVERY) == 0:
+            if debug and frame_idx % (BALL_FRAME_SKIP * DEBUG_VIZ_EVERY) == 0:
                 vis = frame.copy()
                 # Best motion candidate in green (before merge decision)
                 if motion_det is not None:

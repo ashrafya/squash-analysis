@@ -1,6 +1,11 @@
 /.claude/
-/assets/video/men.mp4
-/assets/video/women.mp4
 /assets/video/*
 /venv/
 assets/token.txt2
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# YOLO model weights (auto-downloaded on first run)
+*.pt

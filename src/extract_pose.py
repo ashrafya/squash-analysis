@@ -8,7 +8,7 @@ from scipy.ndimage import median_filter
 from tqdm import tqdm
 
 from video_utils import load_video
-from plot_utils import plot_positions, plot_court_positions, plot_heatmap, plot_histograms, draw_court, show_summary, plot_timeseries
+from plot_utils import plot_positions, plot_court_positions, plot_heatmap, plot_histograms, plot_zone_breakdown, draw_court, show_summary, plot_timeseries
 from calibrate import get_homography, apply_homography
 from stats import compute_movement_stats, print_stats_table, save_run_history, compute_zone_stats, print_zone_table, compute_timeseries
 from config import (
@@ -451,6 +451,7 @@ def main(debug=False, calibrate=False, reuse=False):
     plot_positions(xs1, ys1, xs2, ys2, background=first_frame, title="Player Movement (Pixel Space)")
     plot_court_positions(court_xs1, court_ys1, court_xs2, court_ys2, title="Player Movement (Court Space)")
     plot_heatmap(court_xs1, court_ys1, court_xs2, court_ys2, zone_stats1=zone1, zone_stats2=zone2)
+    plot_zone_breakdown(zone1, zone2)
     plot_histograms(court_xs1, court_ys1, court_xs2, court_ys2)
     plot_timeseries(ts1, ts2)
 

@@ -231,6 +231,78 @@ def plot_heatmap(xs1, ys1, xs2, ys2, title="Player Heatmap",
         plt.close(fig)
 
 
+def plot_zone_breakdown(zone_stats1, zone_stats2):
+    """Save a standalone zone breakdown chart for both players.
+
+    Each cell is filled with a colour proportional to the time spent in that
+    zone, with the zone name and percentage printed inside.  The T zone gets
+    a gold border so coaches can immediately spot T-position dominance.
+    Saved to output/zone_breakdown.png.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(14, 9))
+    fig.suptitle("Court Zone Breakdown", fontsize=14, fontweight="bold")
+
+    # Base RGB values per player (player 1 = red family, player 2 = blue family)
+    base_colors = [(0.8, 0.1, 0.1), (0.05, 0.35, 0.85)]
+
+    for ax, zone_stats, label, base in zip(
+        axes,
+        [zone_stats1, zone_stats2],
+        PLAYER_LABELS,
+        base_colors,
+    ):
+        draw_court(ax)
+
+        all_pcts = [zone_stats.get(name, 0.0) for row in ZONE_NAMES for name in row]
+        max_pct = max(all_pcts) if max(all_pcts) > 0 else 1.0
+
+        for ri, row in enumerate(ZONE_NAMES):
+            y0 = ZONE_ROW_EDGES[ri]
+            y1 = ZONE_ROW_EDGES[ri + 1]
+            for ci, name in enumerate(row):
+                x0 = ZONE_COL_EDGES[ci]
+                x1 = ZONE_COL_EDGES[ci + 1]
+                pct = zone_stats.get(name, 0.0)
+
+                # Alpha scales linearly from 0.08 (empty) to 0.82 (max)
+                alpha = 0.08 + 0.74 * (pct / max_pct)
+                is_t = (name == "T")
+
+                ax.add_patch(mpatches.Rectangle(
+                    (x0, y0), x1 - x0, y1 - y0,
+                    facecolor=(*base, alpha),
+                    edgecolor="gold" if is_t else "none",
+                    linewidth=3 if is_t else 0,
+                    zorder=3,
+                ))
+
+                x_mid = (x0 + x1) / 2
+                y_mid = (y0 + y1) / 2
+                text_color = "white" if alpha > 0.45 else "black"
+                ax.text(
+                    x_mid, y_mid,
+                    f"{name}\n{pct:.1f}%",
+                    ha="center", va="center",
+                    fontsize=10,
+                    fontweight="bold" if is_t else "normal",
+                    color=text_color,
+                    zorder=6,
+                )
+
+        # Draw zone boundary lines on top of fills
+        line_kw = dict(color="gray", linewidth=1.2, linestyle="--", alpha=0.7, zorder=5)
+        for x in ZONE_COL_EDGES[1:-1]:
+            ax.plot([x, x], [0, COURT_LENGTH_M], **line_kw)
+        for y in ZONE_ROW_EDGES[1:-1]:
+            ax.plot([0, COURT_WIDTH_M], [y, y], **line_kw)
+
+        ax.set_title(f"{label} — Zone Breakdown", fontsize=12)
+
+    plt.tight_layout()
+    _save(fig, "zone_breakdown.png")
+    plt.close(fig)
+
+
 def plot_histograms(xs1, ys1, xs2, ys2):
     """Save overlaid Y and X position distribution histograms for both players."""
     fig, (ax_y, ax_x) = plt.subplots(1, 2, figsize=(14, 5))
