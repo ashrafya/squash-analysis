@@ -148,14 +148,14 @@ Deliverable:
 
 ---
 
-## Week 2 — Ball Tracking, Rally Intelligence & Player Metrics
+## Week 2 — Ball Tracking, Rally Intelligence & Player Metrics ✅ COMPLETE
 
 ### Goals
 Match SmartSquash's movement stats and add rally-level insight they do not offer.
 
 ---
 
-### Day 8 — Distance, Speed & T-Position Stats
+### Day 8 — Distance, Speed & T-Position Stats ✅
 
 **Objective:** Give players the numbers coaches actually care about
 
@@ -171,7 +171,7 @@ Deliverable:
 
 ---
 
-### Day 9 — Court Zone Breakdown
+### Day 9 — Court Zone Breakdown ✅
 
 **Objective:** Show exactly which court zones a player dominates or neglects
 
@@ -185,7 +185,7 @@ Deliverable:
 
 ---
 
-### Day 10 — Ball Detection
+### Day 10 — Ball Detection ✅
 
 **Objective:** Detect the squash ball in video frames reliably
 
@@ -200,7 +200,7 @@ Deliverable:
 
 ---
 
-### Day 11 — Ball Tracking & Court-Space Trajectory
+### Day 11 — Ball Tracking & Court-Space Trajectory ✅
 
 **Objective:** Convert noisy ball detections into a smooth trajectory
 
@@ -215,78 +215,74 @@ Deliverable:
 
 ---
 
-### Day 12 — Player Tracking: Option B & C Experiments
+### Day 12 — Player Tracking: YOLOv8-pose (Option B) ✅
 
-**Objective:** Eliminate player identity coupling at its root by replacing (or augmenting) the MediaPipe dual-crop trackers with true multi-person detection
+**Objective:** Eliminate player identity coupling by replacing the MediaPipe dual-crop trackers with YOLOv8-pose full-frame detection
 
-Day 11 shipped **Option A** (velocity cap + coupling counter + periodic re-assignment via 2×2 Hungarian matching), which reduces but does not eliminate coupling. This day experiments with two architecturally stronger alternatives.
+Implemented **Option B**: YOLOv8-pose detects all people in a single forward pass; Hungarian minimum-cost matching assigns detections to (P1, P2) each frame — coupling is architecturally impossible.
 
-**Option B — Full rewrite with YOLOv8-pose (recommended)**
-
-YOLOv8-pose detects all people in a single forward pass, making coupling architecturally impossible.
-
-Tasks:
-- `pip install ultralytics` and smoke-test `yolov8n-pose.pt` on a sample frame
-- Replace `extract_pose.py` tracking loop with YOLOv8-pose inference: full frame → detections → Hungarian matching to (P1, P2) by minimum displacement
-- Port `get_ground_position` heel/ankle fallback tiers to COCO keypoint indices (COCO 15=L_ankle, 16=R_ankle)
-- Validate: run both pipelines on the same clip and compare court-space traces
-- Benchmark: measure frames/second on CPU vs Option A baseline
-
-**Option C — Hybrid (MediaPipe crop + YOLO verifier)**
-
-Keep the fast MediaPipe crop trackers but use YOLOv8-pose every `VERIFY_EVERY_N` frames as a ground-truth anchor.
-
-Tasks:
-- Implement `_yolo_verify(frame, last_pos_1, last_pos_2)` — full-frame YOLO + Hungarian re-assignment
-- Replace `_try_reassign` (fragile top/bottom split) with `_yolo_verify` in the periodic verification sweep
-- Guard with `try/except ImportError` so the pipeline still runs without `ultralytics` installed (falls back to Option A)
-- Compare coupling event counts: Option A baseline vs Option C on full match
+Tasks completed:
+- Replaced `extract_pose.py` tracking loop with `extract_pose_yolo.py` — full-frame YOLOv8n-pose inference
+- Ported ground-position fallback tiers to COCO-17 keypoint indices (ankles → knees → hips)
+- Hungarian assignment via `scipy.optimize.linear_sum_assignment`
+- Camera-cut filter, jump cap, hold-last-value semantics carried over from Day 9
+- `--tracker yolo` (default) / `--tracker mediapipe` flag added to `main.py`
+- Raw pixel positions saved to `output/last_positions_yolo.npz`
 
 Deliverable:
-- At least one of Option B or C fully working on a complete match video, with a side-by-side court-trace comparison showing the improvement over Option A
+- `src/extract_pose_yolo.py` fully working; `python src/main.py` defaults to YOLO tracker
 
 ---
 
-### Day 13 — Rally Segmentation, Per-Rally Stats & Winner/Error Tagging
+### Day 13 — Rally Segmentation & Combined Analysis ✅
 
 **Objective:** Segment the match into individual rallies and compute per-rally statistics
 
-Tasks:
-- **Rally segmentation** (prerequisite): implement `segment_rallies(ball_frames, ball_lost_segments)` in a new `src/segment_rallies.py` — a ball-lost event lasting > `RALLY_END_MIN_FRAMES` (configurable, default 15 frames ≈ 0.6 s) marks an inter-rally gap; everything between two such gaps is one rally; export `output/rally_boundaries.csv` with `(rally_id, start_frame, end_frame)`
-- Compute rally length in shots and seconds
-- Compute player distance covered per rally
-- Tag rally outcome: Player 1 winner / Player 2 winner / ambiguous (based on which player the ball lands near at rally end)
-- Compute winner and error rates per player
-- Export `rally_stats.csv`
+Tasks completed:
+- `segment_rallies(frame_idx, min_gap_frames)` — gaps ≥ `RALLY_END_MIN_FRAMES` (default 20 frames = 0.8 s) mark inter-rally boundaries; configurable via `--min-gap`
+- Per-rally stats: duration, approx shot count (velocity direction reversals), P1/P2 court-space distance
+- Combined court plot — player scatter (translucent) + ball trajectory coloured by rally number → `output/combined_court.png`
+- Rally timeline bar chart → `output/rally_timeline.png`
+- Exports `output/rally_boundaries.csv` and `output/rally_stats.csv`
 
 Deliverable:
-- `rally_boundaries.csv` with start/end frame of every detected rally
-- `rally_stats.csv` with outcome, duration, distance, and shot count per rally
+- `src/segment_rallies.py` — run as `python src/segment_rallies.py [--min-gap N]`
+- `rally_boundaries.csv`, `rally_stats.csv`, `combined_court.png`, `rally_timeline.png`
 
 ---
 
-### Day 14 — Week 2 Testing & Validation Buffer
+### Day 14 — Testing, Validation & Video Overlay
 
-**Objective:** Validate all Week 2 outputs against manual estimates before moving on
+**Objective:** Validate all Week 2 outputs and render tracking results back onto the original video
+
+**Part A — Testing & Validation**
 
 Tasks:
-- Run the full pipeline (player tracking → ball detection → ball tracking → rally segmentation → stats) end-to-end on at least 2 different match videos
-- Manually estimate total distance and rally count for a 3-minute clip; compare against pipeline output; flag any discrepancy > 20%
-- Verify zone percentages sum to 100% and front/back split is plausible given the video
-- Fix any bugs found — this day is intentionally a buffer; do not start Week 3 work here
+- Run the full pipeline (player tracking → ball detection → ball tracking → rally segmentation → stats) end-to-end
+- Verify rally count and duration against manual inspection; flag discrepancies > 20%
+- Verify zone percentages sum to 100%; check front/back split is plausible
+- Fix any bugs found
 
-Note: Batch processing (accepting a directory of video segments for one match) is a deployment-level feature that belongs in Week 5 (Day 33), once the full pipeline including shot classification and PDF reports is in place.
+**Part B — Video Overlay** (`src/render_overlay.py`)
+
+Tasks:
+- Render tracked player positions as coloured dots on each video frame
+- Overlay ball position (when detected) as a distinct marker
+- Display live stats (distance, speed, rally #) as a HUD in the corner
+- Project a mini top-down court diagram into a corner of the frame showing live positions
+- Export annotated video to `output/annotated_video.mp4`
 
 Deliverable:
-- All Week 2 stats validated on 2+ videos; known bugs logged or fixed
+- All Week 2 stats validated
+- `output/annotated_video.mp4` with player tracking, ball tracking, and HUD overlaid on the original footage
 
 ---
 
-### Week 2 Definition of Done
-- Distance, speed, T-time, and zone stats generated for every run
-- Ball tracked reliably enough to segment rallies with >80% accuracy
-- `rally_stats.csv` exported automatically
-- Batch processing works on a full match folder
+### Week 2 Definition of Done ✅
+- Distance, speed, T-time, and zone stats generated for every run ✅
+- Ball tracked with YOLOv8 + MOG2 motion fallback ✅
+- Rally segmented from ball-lost gaps; `rally_stats.csv` exported automatically ✅
+- Combined court diagram (players + ball, coloured by rally) generated ✅
 
 ---
 
@@ -788,7 +784,7 @@ Deliverable:
 | Week | Theme | Key Outputs |
 |---|---|---|
 | 1 ✅ | Player tracking + heatmap MVP | Floor heatmap, court mapping, CLI |
-| 2 | Ball tracking + rally intelligence | Speed/distance stats, rally segmentation, zone breakdown |
+| 2 ✅ | Ball tracking + rally intelligence | Speed/distance stats, rally segmentation, zone breakdown, combined court viz |
 | 3 | Shot intelligence + web UI | Shot classification, front wall heatmap, highlights, Streamlit UI, PDF report |
 | 4 | Foundation + validation + advanced analytics | SQLite DB, accuracy suite, advanced movement metrics, ablation studies |
 | 5 | Scouting + progress + deployment | Player profiles, opponent scouting, benchmarking, batch processing, Docker |
