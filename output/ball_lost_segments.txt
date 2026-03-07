@@ -1,1 +1,4 @@
-No ball-lost segments detected.
+ Start frame   End frame   Duration (frames)  Duration (s)
+------------------------------------------------------------
+          59          74                  16          0.64
+          82          88                   7          0.28

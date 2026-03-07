@@ -50,7 +50,7 @@ _GAP_FILL_MAX = KALMAN_GAP_FILL      # default: 5 (set in config.py)
 _LOST_MIN_FRAMES = _GAP_FILL_MAX + 1
 
 # Animation: number of frames shown in the trailing "ghost" path
-_TRAIL_LEN = 30
+_TRAIL_LEN = 60
 
 # Output paths
 _SMOOTH_PNG  = os.path.join(OUTPUT_DIR, "ball_trajectory_smooth.png")
@@ -211,15 +211,15 @@ def _make_animation(xs_m: np.ndarray, ys_m: np.ndarray,
     fill_s = filled[::step]
     n = len(xs_s)
 
-    fig, ax = plt.subplots(figsize=(5, 7))
+    fig, ax = plt.subplots(figsize=(7, 10))
     draw_court(ax)
-    ax.set_title("Ball trajectory (animated)", fontsize=10)
+    ax.set_title("Ball trajectory (animated)", fontsize=12)
 
-    trail_line, = ax.plot([], [], color="yellow", linewidth=1.2, alpha=0.6, zorder=4)
-    ball_dot,   = ax.plot([], [], "o", color="yellow", markersize=6,
-                          markeredgecolor="darkorange", markeredgewidth=0.8, zorder=5)
-    fill_dot,   = ax.plot([], [], "o", color="deepskyblue", markersize=5,
-                          markeredgecolor="steelblue", markeredgewidth=0.6, zorder=5)
+    trail_line, = ax.plot([], [], color="yellow", linewidth=2.0, alpha=0.8, zorder=4)
+    ball_dot,   = ax.plot([], [], "o", color="yellow", markersize=10,
+                          markeredgecolor="darkorange", markeredgewidth=1.5, zorder=5)
+    fill_dot,   = ax.plot([], [], "o", color="deepskyblue", markersize=9,
+                          markeredgecolor="steelblue", markeredgewidth=1.2, zorder=5)
 
     def _init():
         trail_line.set_data([], [])
@@ -241,9 +241,9 @@ def _make_animation(xs_m: np.ndarray, ys_m: np.ndarray,
         return trail_line, ball_dot, fill_dot
 
     ani = animation.FuncAnimation(fig, _update, frames=n, init_func=_init,
-                                  interval=40, blit=True)
+                                  interval=80, blit=True)
 
-    writer = animation.PillowWriter(fps=25)
+    writer = animation.PillowWriter(fps=12)
     ani.save(_ANIM_GIF, writer=writer)
     print(f"Saved: {_ANIM_GIF}")
     plt.close(fig)

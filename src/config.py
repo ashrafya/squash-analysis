@@ -5,7 +5,7 @@
 # ── Paths ─────────────────────────────────────────────────────────────────────
 import os as _os
 _PROJECT_ROOT    = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
-VIDEO_PATH       = _os.path.join(_PROJECT_ROOT, "assets", "video", "women720.mp4")
+VIDEO_PATH       = _os.path.join(_PROJECT_ROOT, "assets", "video", "women360.mp4")
 CALIBRATION_PATH = _os.path.join(_PROJECT_ROOT, "assets", "homography.npy")
 OUTPUT_DIR       = _os.path.join(_PROJECT_ROOT, "output")
 
@@ -22,7 +22,7 @@ T_Y = COURT_LENGTH_M - SHORT_LINE_M  # 5.49 m — T junction y position
 
 # ── Video Processing ──────────────────────────────────────────────────────────
 VIDEO_FPS        = 25   # known frame rate of the source videos — used for all timing math
-FRAME_CAP        = 50   # max frames to process (set to None to process full video)
+FRAME_CAP        = 2000   # max frames to process (set to None to process full video)
 FRAME_SKIP       = 20   # process every Nth frame; time between analysed frames = FRAME_SKIP / VIDEO_FPS
 MODEL_COMPLEXITY = 0    # MediaPipe model complexity: 0=fastest, 1=balanced, 2=most accurate
 
