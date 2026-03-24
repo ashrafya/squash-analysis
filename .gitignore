@@ -1,6 +1,7 @@
 /.claude/
 /venv/
 assets/token.txt2
+assets/video/women720.mp4
 
 # Next.js
 website/node_modules/
