@@ -148,10 +148,11 @@ Deliverable:
 
 ---
 
-## Week 2 — Ball Tracking, Rally Intelligence & Player Metrics ✅ COMPLETE
+## Week 2 — Player Metrics, YOLO Tracking & Video Overlay
 
 ### Goals
-Match SmartSquash's movement stats and add rally-level insight they do not offer.
+Complete player tracking, compute the core movement stats, and render results onto video.
+Ball tracking is deferred to Week 4 — everything in this week works from player positions alone.
 
 ---
 
@@ -185,37 +186,58 @@ Deliverable:
 
 ---
 
-### Day 10 — Ball Detection ✅
+### Day 10 — SQLite Database & Player Identity
 
-**Objective:** Detect the squash ball in video frames reliably
+**Objective:** Replace flat JSON run history with a proper database before building any profile features on top of it
 
 Tasks:
-- Colour-based detection: isolate yellow/white ball using HSV thresholds + contour circularity filter
-- Benchmark accuracy on 200 manually labelled frames
-- If <70% recall, switch to a fine-tuned YOLOv8-nano model (fast enough for real-time)
-- Store raw ball pixel positions and detection confidence per frame
+- Design schema with `src/db.py`:
+  - `players (id, name, created_at)`
+  - `matches (id, player_id, opponent_id, match_date, venue, court_id, video_path)`
+  - `match_stats (match_id, duration_s, distance_m, avg_speed_ms, peak_speed_ms, t_time_pct, front_pct, back_pct, zone_json, coverage_pct, fatigue_index, lateral_bias)`
+  - `rallies (id, match_id, start_frame, end_frame, winner, duration_s, distance_p1_m, distance_p2_m, n_shots)`
+  - `shots (id, rally_id, frame_idx, player_idx, shot_type, confidence, origin_zone, wall_x, wall_y)`
+- Write `db.py`: `init_db()`, `save_match()`, `get_player_history(player_id)`, `get_match_stats(match_id)`, `get_all_matches()`
+- Migrate any existing `run_history.json` entries into the new database automatically on first run
+- Add `--player1-name` / `--player2-name` CLI flags to `main.py`; players are looked up or created by name in the `players` table
+- Store raw smoothed position arrays in `output/{player_name}/{match_date}/` — stats can be recomputed without re-running video analysis when formulas improve
+- Keep `run_history.json` as a human-readable export, regenerated from the database on each run
 
 Deliverable:
-- Ball detection script with ≥70% recall on test frames
+- `src/db.py` with full CRUD; all future runs persist automatically to SQLite; `--player1-name` flag working end-to-end
 
 ---
 
-### Day 11 — Ball Tracking & Court-Space Trajectory ✅
+### Day 11 — Advanced Movement Analytics
 
-**Objective:** Convert noisy ball detections into a smooth trajectory
+**Objective:** Replace simple distance/speed stats with metrics that actually tell a coach something new
 
 Tasks:
-- Apply a Kalman filter to smooth detections and fill short gaps (<5 frames)
-- Project ball positions through the homography matrix into court space
-- Detect "ball lost" segments and flag them
-- Visualise trajectory as an animated path on the court diagram
+
+**Better velocity estimation — Savitzky-Golay filter**
+- Replace frame-to-frame Euclidean distance with `scipy.signal.savgol_filter` applied to position arrays
+- Re-derive `avg_speed_ms` and `peak_speed_ms` from the filtered velocity signal; update `stats.py`
+
+**Court coverage — convex hull area**
+- Compute the convex hull of all court-space positions using `scipy.spatial.ConvexHull`
+- Report `coverage_pct` = hull area / court area; overlay the hull outline on the heatmap PNG
+
+**Dominant movement axis — PCA**
+- Stack all frame-to-frame displacement vectors `(dx, dy)` and run `sklearn.decomposition.PCA(n_components=2)`
+- PC1 is the player's dominant movement axis; overlay a small arrow on the court diagram
+- Report `lateral_bias`: ratio of lateral (x) to depth (y) variance
+
+**Fatigue index**
+- Divide the match into 2-minute rolling windows; compute mean speed per window
+- Report `fatigue_index` = speed drop from first quartile to last quartile, normalised by first-quartile speed
 
 Deliverable:
-- Smooth ball trajectory overlaid on the top-down court view
+- Updated stats table: convex hull coverage %, dominant axis angle, lateral/depth bias, fatigue index
+- Heatmap PNG annotated with convex hull outline and PC1 arrow
 
 ---
 
-### Day 12 — Player Tracking: YOLOv8-pose (Option B) ✅
+### Day 12 — Player Tracking: YOLOv8-pose ✅
 
 **Objective:** Eliminate player identity coupling by replacing the MediaPipe dual-crop trackers with YOLOv8-pose full-frame detection
 
@@ -225,7 +247,7 @@ Tasks completed:
 - Replaced `extract_pose.py` tracking loop with `extract_pose_yolo.py` — full-frame YOLOv8n-pose inference
 - Ported ground-position fallback tiers to COCO-17 keypoint indices (ankles → knees → hips)
 - Hungarian assignment via `scipy.optimize.linear_sum_assignment`
-- Camera-cut filter, jump cap, hold-last-value semantics carried over from Day 9
+- Camera-cut filter, jump cap, hold-last-value semantics carried over
 - `--tracker yolo` (default) / `--tracker mediapipe` flag added to `main.py`
 - Raw pixel positions saved to `output/last_positions_yolo.npz`
 
@@ -234,11 +256,225 @@ Deliverable:
 
 ---
 
-### Day 13 — Rally Segmentation & Combined Analysis ✅
+### Day 13 — Movement Intelligence Visualisations
+
+**Objective:** Give coaches visual tools that go beyond what any current commercial product offers — all derived from player positions, no ball needed
+
+Tasks:
+
+**Movement vector field**
+- Divide the court into a 6×9 grid; for each cell compute the mean displacement vector of positions passing through it
+- Overlay arrows on the court diagram showing direction and magnitude of movement in each zone
+- Save to `output/movement_vector_field.png`
+
+**Speed distribution comparison**
+- Violin plot of instantaneous speed distributions for both players on the same axis
+- Save to `output/speed_distributions.png`
+
+**Return-to-T tendency** *(approximate without ball — uses midpoint between last and next positions as proxy for shot event)*
+- Record player position 1 s and 2 s after each approximate shot event
+- `T_recovery_rate` = % of events after which player is within T_RADIUS_M of the T — a key coaching metric
+- Save to `output/t_recovery.png`
+
+Deliverable:
+- All three visualisations saved to `output/` automatically at end of each run
+
+---
+
+### Day 14 — Testing, Validation & Video Overlay
+
+**Objective:** Validate all Week 2 outputs and render tracking results back onto the original video
+
+**Part A — Testing & Validation**
+
+Tasks:
+- Run the full pipeline (player tracking → stats → zone breakdown → movement visualisations) end-to-end
+- Verify zone percentages sum to 100%; check front/back split is plausible
+- Verify convex hull area is within court bounds
+- Fix any bugs found
+
+**Part B — Video Overlay** (`src/render_overlay.py`)
+
+Tasks:
+- Render tracked player positions as coloured dots on each video frame
+- Display live stats (distance, speed, zone) as a HUD in the corner
+- Project a mini top-down court diagram into a corner of the frame showing live positions
+- Export annotated video to `output/annotated_video.mp4`
+
+Deliverable:
+- All Week 2 stats validated
+- `output/annotated_video.mp4` with player tracking and HUD overlaid on the original footage
+
+---
+
+### Week 2 Definition of Done
+- Distance, speed, T-time, and zone stats generated for every run ✅
+- YOLOv8-pose tracker with Hungarian assignment working as default ✅
+- SQLite database stores all match data; `--player1-name` flag working
+- Advanced movement metrics (convex hull, PCA, fatigue index) computed per match
+- Annotated video output with player tracking HUD
+
+---
+
+## Week 3 — Web UI, Court Calibration & Match Reports
+
+### Goals
+Make the tool usable by coaches without touching the command line. All features in this week
+run on player tracking data alone — no ball tracking required.
+
+---
+
+### Day 15 — Streamlit Web UI
+
+**Objective:** Make everything accessible without the command line
+
+Tasks:
+- Build a single-page Streamlit app: video upload, player selection, court calibration, analysis trigger
+- Progress bar with estimated time remaining during processing
+- Display heatmap (floor), stats cards, zone breakdown, movement visualisations
+- Download buttons for PNG heatmap, CSV stats
+
+Deliverable:
+- `streamlit run app.py` launches a fully working web UI
+
+---
+
+### Day 16 — In-Browser Court Calibration
+
+**Objective:** Replace the OpenCV click-window with something coaches can actually use
+
+Tasks:
+- Display first video frame as a static image in the browser
+- User clicks court corners directly in the UI using `streamlit-drawable-canvas`
+- Pass clicked coordinates to the existing homography pipeline
+- Show calibration preview overlay before confirming
+
+Deliverable:
+- Court calibration that works entirely inside the browser — no desktop popup windows
+
+---
+
+### Day 17 — PDF Match Report
+
+**Objective:** Give coaches a shareable, professional match report
+
+Tasks:
+- One-page PDF: player name, match date, floor heatmap, stats table, zone breakdown, movement visualisations, top insights
+- "Export PDF" button in the web UI
+- Use `reportlab` for layout control
+- Auto-generate after every analysis run (also saved to `output/`)
+
+Deliverable:
+- Professional PDF report downloadable from the app in one click
+
+---
+
+### Day 18 — Match History & Progress Dashboard
+
+**Objective:** Show a player whether they are improving week over week
+
+Tasks:
+- Session history sidebar in the Streamlit UI — click any past match to reload its heatmaps and stats
+- Line charts for key metrics over time: distance per match, T-time %, fatigue index, convex hull coverage
+- Highlight statistically significant improvements or regressions (> 10 % change flagged with context)
+- "Biggest improvement this month" and "Area needing most work" headline cards from the database
+- Export a monthly progress PDF report
+
+Deliverable:
+- Progress dashboard showing measurable trend lines across all stored matches
+
+---
+
+### Day 19 — Benchmarking & Context
+
+**Objective:** Give players context for their numbers so stats feel meaningful rather than abstract
+
+**Core tasks (required):**
+- Define a hardcoded `BENCHMARK_REFERENCE` dict in `src/benchmarks.py` with club-level and recreational ranges for each key metric, sourced from published squash science literature
+- In the Streamlit UI, display each stat alongside its benchmark range with a traffic-light colour: green = within elite range, amber = club level, red = below club level
+- Add a "Context" card: one sentence per metric explaining what the number means for a squash player
+
+**Optional stretch goals:**
+- Curate actual stats from 3–5 publicly available PSA match analysis papers and replace hardcoded ranges with real measured values
+- Show a percentile ranking: "Your T-time is in the 60th percentile for club-level players"
+
+Deliverable:
+- Traffic-light benchmark comparison shown in the Streamlit UI for every key metric; context sentence per metric
+
+---
+
+### Day 20 — Ground Truth Accuracy Validation Suite (player tracking)
+
+**Objective:** Produce a repeatable, automated accuracy report for player tracking so numbers shown to coaches can be trusted
+
+Tasks:
+- **Court mapping error**: project the 9 known court line intersections through the homography; compare against WSF ground-truth coordinates; report per-point error and RMSE
+- **Player position accuracy**: manually label foot/heel position in 100 evenly-sampled frames; compare against homography-projected pose landmark; report RMSE in metres
+- Save all results to `output/accuracy_report.json` and a printed summary table
+
+Target metrics:
+- Court mapping RMSE < 0.3 m
+- Player position RMSE < 0.5 m
+
+Deliverable:
+- `python src/validate_accuracy.py` produces the player-tracking accuracy report in under 5 minutes
+
+---
+
+### Week 3 Definition of Done
+- Streamlit UI runs end-to-end from upload to PDF report using player tracking data
+- In-browser court calibration replaces OpenCV click window
+- Progress dashboard working across at least 3 stored matches
+- Benchmark percentile rankings shown for key movement metrics
+- Batch processing handles a multi-file match in one command
+
+---
+
+## Week 4 — Ball Tracking & Rally Intelligence
+
+### Goals
+Solve ball detection properly, then build all the downstream features that depend on it:
+rally segmentation, shot classification, front wall heatmap, and video highlights.
+
+---
+
+### Day 22 — Ball Detection
+
+**Objective:** Detect the squash ball in video frames reliably
+
+Tasks:
+- Colour-based detection: isolate yellow/white ball using HSV thresholds + contour circularity filter
+- Benchmark accuracy on 200 manually labelled frames
+- If < 70 % recall, switch to a fine-tuned YOLOv8-nano model
+- Store raw ball pixel positions and detection confidence per frame
+
+Target: ≥ 70 % recall on labelled test frames
+
+Deliverable:
+- Ball detection script with measured recall/precision against a labelled test set
+
+---
+
+### Day 23 — Ball Tracking & Court-Space Trajectory
+
+**Objective:** Convert noisy ball detections into a smooth trajectory
+
+Tasks:
+- Apply a Kalman filter to smooth detections and fill short gaps (< 5 frames)
+- Project ball positions through the homography matrix into court space
+- Detect "ball lost" segments and flag them
+- Visualise trajectory as an animated path on the court diagram
+
+Deliverable:
+- Smooth ball trajectory overlaid on the top-down court view
+
+---
+
+### Day 24 — Rally Segmentation & Combined Analysis
 
 **Objective:** Segment the match into individual rallies and compute per-rally statistics
 
-Tasks completed:
+Tasks:
 - `segment_rallies(frame_idx, min_gap_frames)` — gaps ≥ `RALLY_END_MIN_FRAMES` (default 20 frames = 0.8 s) mark inter-rally boundaries; configurable via `--min-gap`
 - Per-rally stats: duration, approx shot count (velocity direction reversals), P1/P2 court-space distance
 - Combined court plot — player scatter (translucent) + ball trajectory coloured by rally number → `output/combined_court.png`
@@ -251,49 +487,7 @@ Deliverable:
 
 ---
 
-### Day 14 — Testing, Validation & Video Overlay
-
-**Objective:** Validate all Week 2 outputs and render tracking results back onto the original video
-
-**Part A — Testing & Validation**
-
-Tasks:
-- Run the full pipeline (player tracking → ball detection → ball tracking → rally segmentation → stats) end-to-end
-- Verify rally count and duration against manual inspection; flag discrepancies > 20%
-- Verify zone percentages sum to 100%; check front/back split is plausible
-- Fix any bugs found
-
-**Part B — Video Overlay** (`src/render_overlay.py`)
-
-Tasks:
-- Render tracked player positions as coloured dots on each video frame
-- Overlay ball position (when detected) as a distinct marker
-- Display live stats (distance, speed, rally #) as a HUD in the corner
-- Project a mini top-down court diagram into a corner of the frame showing live positions
-- Export annotated video to `output/annotated_video.mp4`
-
-Deliverable:
-- All Week 2 stats validated
-- `output/annotated_video.mp4` with player tracking, ball tracking, and HUD overlaid on the original footage
-
----
-
-### Week 2 Definition of Done ✅
-- Distance, speed, T-time, and zone stats generated for every run ✅
-- Ball tracked with YOLOv8 + MOG2 motion fallback ✅
-- Rally segmented from ball-lost gaps; `rally_stats.csv` exported automatically ✅
-- Combined court diagram (players + ball, coloured by rally) generated ✅
-
----
-
-## Week 3 — Shot Intelligence, Front Wall Heatmap & Web UI
-
-### Goals
-Match and exceed Rally Vision's shot-level analysis — at zero cost to the user.
-
----
-
-### Day 15 — Shot Classification
+### Day 25 — Shot Classification
 
 **Objective:** Identify the type of every shot from ball trajectory alone
 
@@ -301,448 +495,150 @@ Tasks:
 - Extract shot features from ball trajectory segments: angle, speed, height, court origin/destination
 - Train or adapt a lightweight classifier to label: Drive, Drop, Lob, Boast, Volley, Serve
 - Label confidence threshold — flag uncertain shots rather than guess
-- Output shot type per rally event
 
 Deliverable:
 - Every detected shot labelled with type and confidence
 
 ---
 
-### Day 16 — Front Wall Heatmap
+### Day 26 — Front Wall Heatmap & Shot Mix Report
 
-**Objective:** Show where on the front wall shots are landing — a feature Rally Vision charges for
+**Objective:** Show where shots land on the front wall and which ones work
 
 Tasks:
+
+**Front wall heatmap**
 - Project ball trajectory forward to estimate front wall impact point
-- Accumulate impact points into a front wall 2D grid
-- Overlay density heatmap onto a front wall diagram (nick areas highlighted)
+- Accumulate impact points into a front wall 2D grid; overlay density heatmap onto a front wall diagram
 - Separate front wall heatmap per shot type (drives vs drops vs lobs)
 
-Deliverable:
-- Front wall shot placement heatmap — shows whether a player is hitting nicks or telegraphing shots
-
----
-
-### Day 17 — Shot Mix & Effectiveness Report
-
-**Objective:** Tell a player not just what shots they hit but which ones work
-
-Tasks:
+**Shot mix & effectiveness**
 - Cross-reference shot type with rally outcome (winner/error/neutral)
 - Compute shot effectiveness rate per type: % of rallies won after this shot type
-- Compute shot mix: how often each shot type is used relative to total shots
 - Surface "most effective shot" and "highest error rate shot" as headline insights
 
 Deliverable:
-- Shot mix report with effectiveness rates — directly actionable for a coach session
+- Front wall shot placement heatmap
+- Shot mix report with effectiveness rates
 
 ---
 
-### Day 18 — Automatic Video Highlights
+### Day 27 — Automatic Video Highlights & Per-Rally Analytics
 
-**Objective:** Auto-clip the best and worst moments without manual scrubbing
-
-Tasks:
-- Extract video clips for: winners (last 5 s of winning rallies), errors (last 5 s of errors), longest rallies, fastest rallies
-- Compile a highlights reel (concatenated clips) using OpenCV or FFmpeg
-- Save individual clips to `output/highlights/` folder
-
-Deliverable:
-- Auto-generated highlights folder after every analysis run
-
----
-
-### Day 19 — Streamlit Web UI
-
-**Objective:** Make everything accessible without the command line
-
-Tasks:
-- Build a single-page Streamlit app: video upload, player selection, court calibration, analysis trigger
-- Progress bar with estimated time remaining during processing
-- Display heatmap (floor + front wall), stats cards, zone breakdown, shot mix chart
-- Download buttons for PNG heatmap, CSV stats, highlights folder ZIP
-
-Deliverable:
-- `streamlit run app.py` launches a fully working web UI
-
----
-
-### Day 20 — In-Browser Court Calibration
-
-**Objective:** Replace the OpenCV click-window with something coaches can actually use
-
-Tasks:
-- Display first video frame as a static image in the browser
-- User clicks four court corners directly in the UI using `streamlit-drawable-canvas`
-- Pass clicked coordinates to the existing homography pipeline
-- Show calibration preview overlay before confirming
-
-Deliverable:
-- Court calibration that works entirely inside the browser — no desktop popup windows
-
----
-
-### Day 21 — PDF Match Report
-
-**Objective:** Give coaches a shareable, professional match report
-
-Tasks:
-- One-page PDF: player name, match date, floor heatmap, front wall heatmap, stats table, zone breakdown, shot mix, top insights
-- "Export PDF" button in the web UI
-- Use `reportlab` for layout control
-- Auto-generate after every analysis run (also saved to `output/`)
-
-Deliverable:
-- Professional PDF report downloadable from the app in one click
-
----
-
-### Week 3 Definition of Done
-- Every shot classified with type and effectiveness rate
-- Front wall heatmap generated per match
-- Auto video highlights exported
-- Streamlit UI runs end-to-end from upload to PDF report
-- Non-technical coach can use the app without instructions
-
----
-
-
-## Week 4 — Foundation, Validation & Advanced Analytics
-
-### Goals
-Before building the app's most complex user-facing features, validate that the underlying
-pipeline is accurate enough to trust, replace the temporary JSON storage with a database
-that scales to years of match history, and compute the advanced metrics that make the tool
-genuinely superior to commercial alternatives.
-All of Week 5 (scouting, progress tracking, deployment) builds on this foundation.
-
----
-
-### Day 22 — SQLite Database & Player Identity
-
-**Objective:** Replace flat JSON run history with a proper database from day one of profile work — do not build opponent profiling and progress dashboards on a system you know you will have to replace
-
-Why SQLite now: `output/run_history.json` works for a single player on a single machine but cannot power multi-player opponent lookups, trend queries across seasons, or cross-match aggregations. SQLite is a single file, ships with Python, has zero server setup, and handles every query needed through Week 5.
-
-Tasks:
-- Design schema with `src/db.py`:
-  - `players (id, name, created_at)`
-  - `matches (id, player_id, opponent_id, match_date, venue, court_id, video_path)`
-  - `match_stats (match_id, duration_s, distance_m, avg_speed_ms, peak_speed_ms, t_time_pct, front_pct, back_pct, zone_json, coverage_pct, fatigue_index, lateral_bias)`
-  - `rallies (id, match_id, start_frame, end_frame, winner, duration_s, distance_p1_m, distance_p2_m, n_shots)`
-  - `shots (id, rally_id, frame_idx, player_idx, shot_type, confidence, origin_zone, wall_x, wall_y)`
-- Write `db.py`: `init_db()`, `save_match()`, `get_player_history(player_id)`, `get_match_stats(match_id)`, `get_all_matches()`
-- Migrate any existing `run_history.json` entries into the new database automatically on first run
-- Add `--player1-name` / `--player2-name` CLI flags to `main.py`; players are looked up or created by name in the `players` table
-- Store raw smoothed position arrays in `output/{player_name}/{match_date}/` — stats can be recomputed from raw positions without re-running video analysis when formulas improve
-- Keep `run_history.json` as a human-readable export, regenerated from the database on each run
-
-Deliverable:
-- `src/db.py` with full CRUD; all future runs persist automatically to SQLite; `--player1-name` flag working end-to-end
-
----
-
-### Day 23 — Ground Truth Accuracy Validation Suite
-
-**Objective:** Produce a repeatable, automated accuracy report so every future change can be measured against a baseline — and so the numbers shown to coaches can be trusted
-
-Doing this in Week 4 (not at the very end) means problems can still be fixed before complex Week 5 features are built on top of them.
-
-Tasks:
-- **Court mapping error**: on a calibrated test frame, project the 9 known court line intersections (T junction, four short-line ends, four service box corners) through the homography; compare against WSF ground-truth coordinates; report per-point error and RMSE
-- **Player position accuracy**: manually label foot/heel position in 100 evenly-sampled frames; compare against homography-projected pose landmark; report RMSE in metres
-- **Ball detection recall & precision**: manually annotate ball position (or absence) in 200 frames; run detector; compute recall, precision, F1 by method (YOLO vs motion vs merged)
-- **Rally segmentation F1**: manually mark rally start/end timestamps on a 5-minute clip; compare against `segment_rallies()` output; compute F1 score
-- Save all results to `output/accuracy_report.json` and a printed summary table
-
-Target metrics:
-- Court mapping RMSE < 0.3 m
-- Player position RMSE < 0.5 m
-- Ball detection recall ≥ 70 %
-- Rally segmentation F1 ≥ 0.80
-
-Deliverable:
-- `python src/validate_accuracy.py` produces a full accuracy report in under 5 minutes; all four targets met before proceeding to Week 5
-
----
-
-### Day 24 — Advanced Movement Analytics
-
-**Objective:** Replace simple distance/speed stats with metrics that actually tell a coach something new
+**Objective:** Auto-clip key moments and break down stats by rally
 
 Tasks:
 
-**Better velocity estimation — Savitzky-Golay filter**
-- Replace frame-to-frame Euclidean distance with `scipy.signal.savgol_filter` applied to position arrays
-- A polynomial least-squares smoother that simultaneously smooths positions and produces clean first and second derivatives (velocity, acceleration) without the lag of a rolling mean
-- Re-derive `avg_speed_ms` and `peak_speed_ms` from the filtered velocity signal; update `stats.py`
-
-**Court coverage — convex hull area**
-- Compute the convex hull of all court-space positions using `scipy.spatial.ConvexHull`
-- Report `coverage_pct` = hull area / court area; overlay the hull outline on the heatmap PNG
-- Two players can have identical zone percentages but very different hulls — one is in corners, the other covers the full court
-
-**Dominant movement axis — PCA**
-- Stack all frame-to-frame displacement vectors `(dx, dy)` and run `sklearn.decomposition.PCA(n_components=2)`
-- PC1 is the player's dominant movement axis; PC2 is perpendicular
-- Overlay a small arrow on the court diagram showing PC1 direction and magnitude
-- Report `lateral_bias`: ratio of lateral (x) to depth (y) variance
-
-**Fatigue index**
-- Divide the match into 2-minute rolling windows; compute mean speed per window
-- Fit a linear regression (slope + p-value) to the speed-over-time series
-- Report `fatigue_index` = speed drop from first quartile to last quartile, normalised by first-quartile speed
-
-Deliverable:
-- Updated stats table: convex hull coverage %, dominant axis angle, lateral/depth bias, fatigue index
-- Heatmap PNG annotated with convex hull outline and PC1 arrow
-
----
-
-### Day 25 — Per-Rally Analytics & Shot Tempo
-
-**Objective:** Break aggregate stats down by rally to reveal patterns that disappear in averages
-
-Tasks:
+**Video highlights**
+- Extract clips for: winners (last 5 s of winning rallies), errors, longest rallies, fastest rallies
+- Compile a highlights reel using OpenCV or FFmpeg; save to `output/highlights/`
 
 **Per-rally heatmaps**
 - For each segmented rally, compute a separate 2D position density for each player
 - Generate a small-multiple grid PNG: one mini court per rally, coloured by density
-- Immediately shows whether court coverage narrows under pressure in long rallies
-
-**Rally-level fatigue**
-- Plot player speed per rally (x = rally number, y = mean speed during rally)
-- Overlay a trend line; flag when speed drops more than 15 % below the session mean
-- Save to `output/rally_speed_trend.png`
 
 **Shot tempo**
 - From the smoothed ball trajectory, measure time between consecutive ball impacts
-- Compute mean and standard deviation of inter-shot interval per player — low variance = consistent rhythm; high variance = reactive, scrambling play
-
-**Changepoint detection for shot segmentation**
-- Replace hard velocity-threshold shot detection with PELT changepoint detection using the `ruptures` library (`pip install ruptures`)
-- More robust to noisy frames than a fixed threshold
+- Compute mean and standard deviation of inter-shot interval per player
 
 Deliverable:
-- Per-rally heatmap grid saved to `output/per_rally_heatmaps.png`
+- `output/highlights/` folder with auto-generated clips
+- `output/per_rally_heatmaps.png`
 - Shot tempo stats added to match summary table
-- Rally speed trend chart saved to `output/rally_speed_trend.png`
 
 ---
 
-### Day 26 — Movement Intelligence Visualisations
+### Day 28 — Ball Tracking Accuracy Validation & Ablation
 
-**Objective:** Give coaches visual tools that go beyond what any current commercial product offers
+**Objective:** Quantify ball detection and rally segmentation accuracy; measure each pipeline component's contribution
 
 Tasks:
 
-**Movement vector field**
-- Divide the court into a 6×9 grid; for each cell compute the mean displacement vector of positions passing through it
-- Overlay arrows on the court diagram showing direction and magnitude of movement in each zone
-- Save to `output/movement_vector_field.png`
+**Accuracy validation**
+- Manually annotate ball position (or absence) in 200 frames; compute recall, precision, F1
+- Manually mark rally start/end timestamps on a 5-minute clip; compare against `segment_rallies()` output; compute F1
 
-**Return-to-T tendency**
-- After every shot event, record the player's position 1 s and 2 s later
-- Scatter plot: shot origin → 2 s post-shot position, connected by an arrow coloured green (reached T) or red (did not)
-- `T_recovery_rate` = % of shots after which player recovers the T within 2 s — a key coaching metric
-- Save to `output/t_recovery.png`
+Target metrics:
+- Ball detection recall ≥ 70 %
+- Rally segmentation F1 ≥ 0.80
+
+**Ablation study**
+- Run the pipeline with one component disabled at a time; report detection rate and RMSE for each condition:
+  - No camera-cut filter
+  - No Kalman fill
+  - No heel/ankle fallback (hip only)
+  - BALL_FRAME_SKIP=5 vs BALL_FRAME_SKIP=1
+  - `yolov8n` vs `yolov8s` vs `yolov8m` — accuracy vs fps tradeoff
+
+Deliverable:
+- `src/ablation.py` runs all conditions automatically; results saved to `output/ablation_results.json`
+
+---
+
+### Week 4 Definition of Done
+- Ball detection recall ≥ 70 % measured against a labelled test set
+- Rally segmented from ball-lost gaps; `rally_stats.csv` exported automatically
+- Every shot classified with type and effectiveness rate
+- Front wall heatmap generated per match
+- Auto video highlights exported
+- Ablation study quantifies every major pipeline component with measured numbers
+
+---
+
+## Week 5 — Deployment & Final Polish
+
+### Goals
+Shot outcome analysis, Docker deployment, and a demo-ready finish.
+
+---
+
+### Day 29 — Shot Placement Outcome Map
+
+**Objective:** Show not just where shots land but whether they work
+
+Tasks:
+
+**Shot placement outcome heatmap**
+- Take the front wall heatmap and colour each cell by rally outcome after that shot:
+  - Green = point won within 2 shots, Red = error within 2 shots, Grey = rally continues
+- Save to `output/shot_placement_outcomes.png`
+
+**Shot chain analysis**
+- Find the most common 2-shot and 3-shot sequences; flag sequences that disproportionately end in errors
+- Print top 5 chains to console
+
+Deliverable:
+- Shot placement outcome heatmap and shot chain summary generated automatically
+
+---
+
+### Day 30 — Match Momentum & Rally Speed Trends
+
+**Objective:** Visualise momentum and energy output across the match
+
+Tasks:
 
 **Match momentum timeline**
 - A horizontal strip chart showing who was winning the last 5 rallies at each point in the match
 - Overlay speed lines per player — shows whether momentum correlates with energy output
 - Save to `output/momentum_timeline.png`
 
-**Speed distribution comparison**
-- Violin plot of instantaneous speed distributions for both players on the same axis; fatter upper tail = more explosive burst movement
-- Save to `output/speed_distributions.png`
+**Rally-level fatigue**
+- Plot player speed per rally (x = rally number, y = mean speed during rally)
+- Overlay a trend line; flag when speed drops more than 15 % below the session mean
+- Save to `output/rally_speed_trend.png`
 
 Deliverable:
-- All four visualisations saved to `output/` automatically at end of each run
+- `output/momentum_timeline.png` and `output/rally_speed_trend.png` generated automatically
 
 ---
 
-### Day 27 — Shot Placement Outcome Colouring & Opponent Response Map
-
-**Objective:** Show not just where shots land but whether they work — and what the opponent does next
-
-Tasks:
-
-**Shot placement outcome heatmap**
-- Take the front wall heatmap from Day 16 and colour each cell by rally outcome after that shot:
-  - Green = point won within 2 shots
-  - Red = error committed within 2 shots
-  - Grey = rally continues (neutral)
-- Reveals which front wall areas are high-value for this player vs which generate errors
-- Save to `output/shot_placement_outcomes.png`
-
-**Opponent response map**
-- For each shot from court zone X to front wall zone Y, record which court zone the opponent occupies on their next shot
-- Build a conditional probability matrix; display as a court diagram with response arrows
-- Example insight: "tight backhand drive from back-right almost always pushes opponent into back-left"
-- Save to `output/opponent_response_map.png`
-
-**Shot chain analysis**
-- Find the most common 2-shot and 3-shot sequences using n-gram counting over the shot-type sequence
-- Flag sequences that disproportionately end in errors vs winners
-- Print top 5 chains to console
-
-Deliverable:
-- Shot placement outcome heatmap, opponent response map, and shot chain summary all generated automatically
-
----
-
-### Day 28 — Ablation Studies & Systematic Benchmarking
-
-**Objective:** Quantify the contribution of every pipeline component so future changes are evidence-based
-
-Tasks:
-
-**Ablation study — tracking pipeline**
-
-Run the full pipeline with one component disabled at a time; report detection rate and player position RMSE vs ground truth for each condition:
-
-| Condition | Expected impact |
-|---|---|
-| Baseline (all components on) | — |
-| No camera-cut filter | More false positives from replays and ads |
-| No Kalman fill | More fragmented trajectories, more lost-segment events |
-| No heel/ankle fallback (hip only) | Higher Y-position bias on lunges |
-| BALL_FRAME_SKIP=5 vs BALL_FRAME_SKIP=1 | Ball detection recall drops sharply at skip=5 |
-
-**Ablation study — ball detection**
-
-| Condition | Recall | Precision |
-|---|---|---|
-| YOLO only | baseline | baseline |
-| Motion only | expected higher recall | expected lower precision |
-| Merged (current) | expected best F1 | — |
-| 360p vs 720p source | expected −20 pp recall at 360p | — |
-
-**Model size and resolution experiments**
-- Run `yolov8n.pt` vs `yolov8s.pt` vs `yolov8m.pt` on the same 200-frame test set; plot accuracy vs fps tradeoff curve
-- Downsample 720p to 480p and 360p using OpenCV; plot ball detection recall curve vs resolution
-
-Deliverable:
-- `src/ablation.py` runs all conditions automatically and prints a comparison table
-- Results saved to `output/ablation_results.json`
-
----
-
-### Week 4 Definition of Done
-- SQLite database stores all match data; `--player1-name` and `--player2-name` flags tag every run
-- Automated accuracy report passes all four target metrics (court RMSE < 0.3 m, player RMSE < 0.5 m, ball recall ≥ 70 %, rally F1 ≥ 0.80)
-- Savitzky-Golay velocity, convex hull coverage, PCA movement axis, and fatigue index computed and stored per match
-- Per-rally heatmaps, shot tempo, movement visualisations, and shot placement outcome map all generated automatically
-- Ablation study quantifies every major pipeline component with measured numbers
-
----
-
-## Week 5 — Scouting, Progress Tracking & Deployment
-
-### Goals
-Build the user-facing features that turn validated analytics into a usable product for players
-and coaches over a full season. All of these features build directly on the SQLite database,
-accurate pipeline, and advanced metrics established in Week 4.
-
----
-
-### Day 29 — Match History & Progress Dashboard
-
-**Objective:** Show a player whether they are improving week over week, backed by data from the database built in Day 22
-
-Tasks:
-- Display a session history sidebar in the Streamlit UI — click any past match to reload its heatmaps, stats, and visualisations
-- Line charts for key metrics over time: distance per match, T-time %, fatigue index, shot error rate, shot mix evolution, convex hull coverage, T-recovery rate
-- Highlight statistically significant improvements or regressions (> 10 % change flagged with context)
-- "Biggest improvement this month" and "Area needing most work" headline cards generated from the database
-- Export a monthly progress PDF report
-
-Deliverable:
-- Progress dashboard showing measurable improvement (or decline) trend lines across all stored matches
-
----
-
-### Day 30 — Opponent Profiling
-
-**Objective:** Let a player analyse opponent footage to identify exploitable tendencies
-
-Tasks:
-- Run the full analysis pipeline on opponent footage (same tool, `--player1-name` set to opponent's name)
-- All opponent data stored in the same SQLite database under the opponent's player record
-- Aggregate opponent tendencies from all stored matches: preferred shot mix, weakest zone, front/back bias, serve patterns, fatigue profile (when in the match do they slow down?)
-- Identify exploitable patterns: e.g., "rarely plays backhand boast", "error rate spikes in back-left after long rallies", "T-recovery rate drops below 50 % late in games"
-
-Deliverable:
-- Opponent profile page in the Streamlit UI with tendencies and exploitable patterns — equivalent to Cross Court Analytics' scouting feature
-
----
-
-### Day 31 — Pre-Match Scouting Report
-
-**Objective:** Generate a one-page battle plan a player can review the night before a match
-
-Tasks:
-- Query the opponent profile (Day 30) and the player's own profile (Day 29) from the database
-- Generate a pre-match PDF:
-  - Opponent shot mix heatmap and weak zones (uses shot placement outcome map from Day 27)
-  - Opponent fatigue profile — when in the match do they slow down?
-  - Opponent response map — which shot from which zone puts them under most pressure?
-  - Player's own strengths vs opponent's weaknesses — where do they align?
-- Surface top 3 tactical recommendations as bullet points on the first page
-
-Deliverable:
-- Pre-match scouting PDF generated in one click from the Streamlit UI
-
----
-
-### Day 32 — Benchmarking & Context
-
-**Objective:** Give players context for their numbers so stats feel meaningful rather than abstract
-
-The core deliverable is a simple hardcoded reference table — no data curation required. The optional stretch goals add richer comparisons if time and data allow.
-
-**Core tasks (required):**
-- Define a hardcoded `BENCHMARK_REFERENCE` dict in `src/benchmarks.py` with reasonable club-level and recreational ranges for each key metric, sourced from published squash science literature (several peer-reviewed studies report elite and sub-elite movement profiles):
-  - `distance_m`: typical range for a competitive match clip
-  - `avg_speed_ms`, `peak_speed_ms`: published ranges for club vs elite
-  - `t_time_pct`: expected T-position percentage for different levels
-  - `t_recovery_rate`: typical recovery rates
-- In the Streamlit UI, display each stat alongside its benchmark range with a simple traffic-light colour: green = within elite range, amber = club level, red = below club level
-- Add a "Context" card: one sentence per metric explaining what the number means for a squash player (e.g. "Elite players spend > 60 % of rally time within 1.25 m of the T")
-
-**Optional stretch goals (do if time allows):**
-- Curate actual stats from 3–5 publicly available PSA match analysis papers or videos and replace the hardcoded ranges with real measured values
-- Show a percentile ranking: "Your T-time is in the 60th percentile for club-level players" — requires having enough reference data points to form a distribution
-- "Elite overlay": ghost an elite player's heatmap behind the user's heatmap — requires sourcing and processing actual elite match footage, which is a significant data collection effort
-
-Deliverable:
-- Traffic-light benchmark comparison shown in the Streamlit UI for every key metric; context sentence per metric; stretch goals clearly marked as optional in the code
-
----
-
-### Day 33 — Batch Processing & Multi-Video Matches
-
-**Objective:** Process a full match split across multiple video files in one command
-
-Batch processing is placed here (not Day 14) because the full pipeline — shot classification, rally stats, PDF reports, SQLite storage — is now complete. Batching earlier would have produced only partial outputs.
-
-Tasks:
-- Accept a directory as input (`--video-dir`) — process all video segments in alphabetical order
-- Accumulate player positions, rally data, and shot events across segments before computing outputs (no artificial match boundary between files)
-- Cache homography per court by name (`--court-name`) — skip re-calibration if the court has been seen before
-- Validate that all segments have the same resolution and frame rate before processing; warn if not
-
-Deliverable:
-- Single command processes an entire multi-file match; all outputs identical to a single-file run
-
----
-
-### Day 34 — Docker Deployment & Performance Optimisation
+### Day 31 — Docker Deployment & Performance Optimisation
 
 **Objective:** Make the app runnable by anyone on any machine with a single command
 
 Tasks:
-- Profile the pipeline end-to-end — identify bottlenecks (expected: MediaPipe and YOLO inference)
+- Profile the pipeline end-to-end — identify bottlenecks (expected: YOLO inference)
 - Parallelise frame decoding and pose inference using `concurrent.futures`
 - Target ≤ 2× real-time processing (a 60-min match processes in ≤ 30 min on a laptop)
 - Write a `Dockerfile` that installs all dependencies and launches Streamlit
@@ -754,7 +650,22 @@ Deliverable:
 
 ---
 
-### Day 35 — Final Polish & Demo
+### Day 32 — Batch Processing & Multi-Video Matches
+
+**Objective:** Process a full match split across multiple video files in one command
+
+Tasks:
+- Accept a directory as input (`--video-dir`) — process all video segments in alphabetical order
+- Accumulate player positions across segments before computing outputs
+- Cache homography per court by name (`--court-name`) — skip re-calibration if the court has been seen before
+- Validate that all segments have the same resolution and frame rate before processing; warn if not
+
+Deliverable:
+- Single command processes an entire multi-file match; all outputs identical to a single-file run
+
+---
+
+### Day 33 — Final Polish & Demo
 
 **Objective:** Ship a demo-ready tool that can be shown to players, coaches, and potential contributors
 
@@ -770,9 +681,8 @@ Deliverable:
 ---
 
 ### Week 5 Definition of Done
-- Match history and progress dashboard working across at least 3 stored matches
-- Opponent profiling and pre-match scouting PDF generated automatically
-- Benchmark percentile rankings shown for key metrics
+- Shot placement outcome map generated from ball tracking data
+- Match momentum timeline and rally speed trends generated automatically
 - Batch processing handles a multi-file match in one command
 - Docker deployment tested; processing time ≤ 2× real-time
 - Demo recorded and shareable
@@ -784,10 +694,10 @@ Deliverable:
 | Week | Theme | Key Outputs |
 |---|---|---|
 | 1 ✅ | Player tracking + heatmap MVP | Floor heatmap, court mapping, CLI |
-| 2 ✅ | Ball tracking + rally intelligence | Speed/distance stats, rally segmentation, zone breakdown, combined court viz |
-| 3 | Shot intelligence + web UI | Shot classification, front wall heatmap, highlights, Streamlit UI, PDF report |
-| 4 | Foundation + validation + advanced analytics | SQLite DB, accuracy suite, advanced movement metrics, ablation studies |
-| 5 | Scouting + progress + deployment | Player profiles, opponent scouting, benchmarking, batch processing, Docker |
+| 2 | Player metrics + YOLO tracking + video overlay | Speed/distance stats, zone breakdown, SQLite DB, advanced movement metrics, annotated video |
+| 3 | Web UI + match reports + benchmarking | Streamlit UI, in-browser calibration, PDF report, progress dashboard, accuracy validation |
+| 4 | Ball tracking + rally intelligence | Ball detection, rally segmentation, shot classification, front wall heatmap, highlights |
+| 5 | Shot outcomes + deployment + final polish | Shot placement outcomes, momentum timeline, batch processing, Docker, demo |
 
 ## Final Definition of Done
 
@@ -795,12 +705,44 @@ Deliverable:
 - Generates floor heatmap, front wall heatmap, shot mix, effectiveness rates, and PDF report
 - Automatically clips video highlights for winners and errors
 - Player progress tracked across multiple sessions with trend charts and fatigue index
-- Opponent profiling and pre-match scouting report generated from opponent footage
 - Benchmark percentile rankings give context vs club-level and elite players
 - Runs locally via Docker — no video ever leaves the user's machine
 - Tested on five different match videos across different courts
 - Court mapping RMSE < 0.3 m validated by automated accuracy suite
 - Demoed end-to-end in under 5 minutes
+
+---
+
+## Known Gaps
+
+These are real limitations in the current implementation that affect accuracy or usability.
+They differ from the research directions below, which are improvements beyond the current design.
+
+### Tracking
+
+- **Player auto-detection is fragile** — `auto_detect_players` splits the frame top/bottom to assign P1/P2 on the first frame. If both players are on the same half of the frame, identity is assigned wrong and stays wrong for the rest of the run.
+- **No identity-swap correction** — a proximity warning fires when players are close, but there is no automatic correction. Once identities swap, all subsequent stats for that run are wrong.
+- **MediaPipe hip-only fallback is biased** — if heels and ankles are invisible (e.g. player crouching behind the tin), the hip midpoint is used as the ground position. This sits ~1 m above the floor plane, introducing systematic Y-position error on low shots and lunges.
+
+### Ball Tracking
+
+- **Ball tracking is not working reliably** — colour-based HSV detection and TrackNetV4 have both been attempted; neither achieves acceptable recall on match footage. All downstream features that depend on ball position (rally segmentation, shot classification, front wall heatmap) are blocked until this is resolved.
+- **No validated ball detection baseline** — recall/precision have not been formally measured against a labelled test set. Target is ≥ 70 % recall (Day 23 accuracy suite).
+
+### Rally Segmentation
+
+- **Segmentation depends on ball tracking** — `segment_rallies()` uses gaps in ball detection as rally boundaries. With unreliable ball tracking, rally boundaries are unreliable too.
+- **Stats are per-clip, not per-rally** — all movement stats (distance, speed, T-time) are aggregated across the full video clip. Per-rally breakdowns are planned for Day 25 but not yet implemented.
+
+### Calibration & Mapping
+
+- **Manual recalibration required per session** — homography is cached per file path; if the camera shifts even slightly between sessions on the same court, accuracy degrades silently. No automatic drift detection.
+- **14-point calibration is time-consuming** — the click UI requires the user to identify 14 specific court line intersections, which takes 3–5 minutes and is error-prone on low-resolution footage.
+
+### Pipeline
+
+- **No end-to-end accuracy report yet** — court mapping RMSE, player position RMSE, ball detection F1, and rally segmentation F1 have not been formally measured. Planned for Day 23.
+- **`run_history.json` does not scale** — flat JSON file works for one player/one machine but will break for multi-player lookups and trend queries. SQLite migration planned for Day 22.
 
 ---
 
