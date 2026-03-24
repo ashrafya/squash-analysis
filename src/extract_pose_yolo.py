@@ -26,7 +26,11 @@ from plot_utils import (
     plot_positions, plot_court_positions, plot_heatmap, plot_histograms,
     plot_zone_breakdown, draw_court, show_summary, plot_timeseries,
 )
-from calibrate import get_homography, apply_homography
+from calibrate import (
+    get_calibration, get_homography,
+    project_to_court, apply_homography,
+    load_best_calibration, CalibData,
+)
 from stats import (
     compute_movement_stats, print_stats_table, save_run_history,
     compute_zone_stats, print_zone_table, compute_timeseries,
@@ -105,9 +109,15 @@ def get_ground_position_coco(kps: np.ndarray):
 
 # ── Court-bounds filter ────────────────────────────────────────────────────────
 
-def _in_court_bounds(pixel_pos, H):
-    """True if pixel_pos maps within court + COURT_BOUNDS_MARGIN_M via H."""
-    cx, cy = apply_homography([pixel_pos[0]], [pixel_pos[1]], H)
+def _in_court_bounds(pixel_pos, calib_or_H):
+    """True if pixel_pos maps within court + COURT_BOUNDS_MARGIN_M.
+
+    Accepts either a CalibData (3-D) or a numpy ndarray (2-D homography H).
+    """
+    if isinstance(calib_or_H, CalibData):
+        cx, cy = project_to_court([pixel_pos[0]], [pixel_pos[1]], calib_or_H)
+    else:
+        cx, cy = apply_homography([pixel_pos[0]], [pixel_pos[1]], calib_or_H)
     if not cx:
         return True
     x, y = cx[0], cy[0]
@@ -121,7 +131,7 @@ def _in_court_bounds(pixel_pos, H):
 
 # ── YOLO inference ─────────────────────────────────────────────────────────────
 
-def _detect_all_players(frame, model, H):
+def _detect_all_players(frame, model, calib_or_H):
     """Run YOLOv8-pose on the full frame.
 
     Returns a list of (x, y) ground positions (pixel space) for all detected
@@ -138,7 +148,7 @@ def _detect_all_players(frame, model, H):
         pos = get_ground_position_coco(kps)
         if pos is None:
             continue
-        if not _in_court_bounds(pos, H):
+        if not _in_court_bounds(pos, calib_or_H):
             continue
         positions.append(pos)
 
@@ -198,14 +208,14 @@ def smooth_positions(xs, ys, window):
 
 # ── Initial player detection ───────────────────────────────────────────────────
 
-def _initial_detect(first_frame, model, H):
+def _initial_detect(first_frame, model, calib_or_H):
     """Detect starting (P1, P2) positions from the first frame using YOLO.
 
     Returns two pixel-space positions.  Falls back to frame-quarter defaults
     if fewer than two players are found.
     """
     h, w = first_frame.shape[:2]
-    positions = _detect_all_players(first_frame, model, H)
+    positions = _detect_all_players(first_frame, model, calib_or_H)
 
     if len(positions) >= 2:
         # Pick the most spatially separated pair
@@ -254,7 +264,11 @@ def main(debug=False, calibrate=False, reuse=False):
     if not ret:
         raise RuntimeError("Could not read video")
 
-    H = get_homography(first_frame, force_recalibrate=calibrate)
+    calib, H = load_best_calibration(first_frame, force_recalibrate=calibrate)
+    calib_or_H = calib if calib is not None else H
+    _to_court = (lambda xs, ys: project_to_court(xs, ys, calib)
+                 if calib is not None else
+                 lambda xs, ys: apply_homography(xs, ys, H))
 
     model = YOLO(_MODEL_NAME)
     print(f"Loaded YOLOv8-pose model: {_MODEL_NAME}")
@@ -276,7 +290,7 @@ def main(debug=False, calibrate=False, reuse=False):
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         ref_hist = _compute_hist(first_frame)
 
-        last_pos_1, last_pos_2 = _initial_detect(first_frame, model, H)
+        last_pos_1, last_pos_2 = _initial_detect(first_frame, model, calib_or_H)
 
         total = min(frame_count, FRAME_CAP) if FRAME_CAP else frame_count
         xs1, ys1 = [], []
@@ -328,7 +342,7 @@ def main(debug=False, calibrate=False, reuse=False):
                     continue
 
                 # Full-frame YOLO inference → Hungarian assign to (P1, P2)
-                detections = _detect_all_players(frame, model, H)
+                detections = _detect_all_players(frame, model, calib_or_H)
                 pos1, pos2 = _hungarian_assign(detections, last_pos_1, last_pos_2)
 
                 # Jump cap + hold-last-value (same semantics as MediaPipe tracker)
@@ -355,10 +369,10 @@ def main(debug=False, calibrate=False, reuse=False):
                     cv2.circle(vis, (int(last_pos_2[0]), int(last_pos_2[1])), 9, (255, 100, 0), -1)
                     _im.set_data(cv2.cvtColor(vis, cv2.COLOR_BGR2RGB))
                     if xs1:
-                        cxs1, cys1 = apply_homography(xs1, ys1, H)
+                        cxs1, cys1 = _to_court(xs1, ys1)
                         _sc1.set_offsets(np.c_[cxs1, cys1])
                     if xs2:
-                        cxs2, cys2 = apply_homography(xs2, ys2, H)
+                        cxs2, cys2 = _to_court(xs2, ys2)
                         _sc2.set_offsets(np.c_[cxs2, cys2])
                     fig.canvas.draw_idle()
                     plt.pause(0.001)
@@ -385,8 +399,8 @@ def main(debug=False, calibrate=False, reuse=False):
 
     print(f"Extracted {len(xs1)} positions for Player 1, {len(xs2)} for Player 2")
 
-    court_xs1, court_ys1 = apply_homography(xs1, ys1, H) if xs1 else ([], [])
-    court_xs2, court_ys2 = apply_homography(xs2, ys2, H) if xs2 else ([], [])
+    court_xs1, court_ys1 = _to_court(xs1, ys1) if xs1 else ([], [])
+    court_xs2, court_ys2 = _to_court(xs2, ys2) if xs2 else ([], [])
 
     stats1 = compute_movement_stats(court_xs1, court_ys1, fps, FRAME_SKIP)
     stats2 = compute_movement_stats(court_xs2, court_ys2, fps, FRAME_SKIP)

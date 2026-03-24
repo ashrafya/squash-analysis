@@ -9,7 +9,10 @@ from tqdm import tqdm
 
 from video_utils import load_video
 from plot_utils import plot_positions, plot_court_positions, plot_heatmap, plot_histograms, plot_zone_breakdown, draw_court, show_summary, plot_timeseries
-from calibrate import get_homography, apply_homography
+from calibrate import (
+    load_best_calibration, get_homography,
+    project_to_court, apply_homography, CalibData,
+)
 from stats import compute_movement_stats, print_stats_table, save_run_history, compute_zone_stats, print_zone_table, compute_timeseries
 from config import (
     VIDEO_PATH,
@@ -32,7 +35,10 @@ from config import (
     COURT_BOUNDS_MARGIN_M,
 )
 
-mp_pose = mp.solutions.pose
+try:
+    mp_pose = mp.solutions.pose
+except AttributeError:
+    mp_pose = None  # mediapipe >= 0.10.30 removed solutions; use YOLO tracker instead
 
 # Two independent pose detectors so each player's temporal tracking stays separate
 _pose_kwargs = dict(
@@ -42,8 +48,11 @@ _pose_kwargs = dict(
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5,
 )
-pose1 = mp_pose.Pose(**_pose_kwargs)
-pose2 = mp_pose.Pose(**_pose_kwargs)
+if mp_pose is not None:
+    pose1 = mp_pose.Pose(**_pose_kwargs)
+    pose2 = mp_pose.Pose(**_pose_kwargs)
+else:
+    pose1 = pose2 = None
 
 POSITIONS_PATH = os.path.join(OUTPUT_DIR, "last_positions.npz")
 
@@ -131,15 +140,15 @@ def detect_in_region(frame, last_pos, pose_model):
     return None
 
 
-def _in_court_bounds(pixel_pos, H):
-    """Return True if pixel_pos maps to within the court (+COURT_BOUNDS_MARGIN_M) via H.
+def _in_court_bounds(pixel_pos, calib_or_H):
+    """Return True if pixel_pos maps to within the court (+COURT_BOUNDS_MARGIN_M).
 
-    Rejects detections that project outside the squash court, which catches
-    spurious MediaPipe hits on advertising boards, scoreboards, or spectators.
-    Returns True on mapping failure (NaN / empty) so we don't discard valid
-    positions when the homography is ill-conditioned at the frame edges.
+    Accepts CalibData (3-D) or ndarray (2-D homography H).
     """
-    cx, cy = apply_homography([pixel_pos[0]], [pixel_pos[1]], H)
+    if isinstance(calib_or_H, CalibData):
+        cx, cy = project_to_court([pixel_pos[0]], [pixel_pos[1]], calib_or_H)
+    else:
+        cx, cy = apply_homography([pixel_pos[0]], [pixel_pos[1]], calib_or_H)
     if not cx:
         return True
     x, y = cx[0], cy[0]
@@ -271,7 +280,10 @@ def main(debug=False, calibrate=False, reuse=False):
     if not ret:
         raise RuntimeError("Could not read video")
 
-    H = get_homography(first_frame, force_recalibrate=calibrate)
+    calib, H = load_best_calibration(first_frame, force_recalibrate=calibrate)
+    _to_court = (lambda xs, ys: project_to_court(xs, ys, calib)
+                 if calib is not None else
+                 lambda xs, ys: apply_homography(xs, ys, H))
 
     # ── Reuse saved positions from last run ───────────────────────────────────
     if reuse:
@@ -372,8 +384,8 @@ def main(debug=False, calibrate=False, reuse=False):
                 # legitimately occlude each other on a squash court so we only flag
                 # them as coupled when they are extremely close in real-world metres.
                 # Active correction needs a real multi-person detector — see Day 12 Option B/C.
-                _cp1 = apply_homography([last_pos_1[0]], [last_pos_1[1]], H)
-                _cp2 = apply_homography([last_pos_2[0]], [last_pos_2[1]], H)
+                _cp1 = _to_court([last_pos_1[0]], [last_pos_1[1]])
+                _cp2 = _to_court([last_pos_2[0]], [last_pos_2[1]])
                 if (_cp1[0] and _cp2[0]
                         and not np.isnan(_cp1[0][0]) and not np.isnan(_cp2[0][0])):
                     court_sep_m = np.hypot(_cp1[0][0] - _cp2[0][0], _cp1[1][0] - _cp2[1][0])
@@ -394,10 +406,10 @@ def main(debug=False, calibrate=False, reuse=False):
                         cv2.circle(vis, (int(pos2[0]), int(pos2[1])), 8, (255, 100, 0), -1)
                     _im.set_data(cv2.cvtColor(vis, cv2.COLOR_BGR2RGB))
                     if xs1:
-                        cxs1, cys1 = apply_homography(xs1, ys1, H)
+                        cxs1, cys1 = _to_court(xs1, ys1)
                         _sc1.set_offsets(np.c_[cxs1, cys1])
                     if xs2:
-                        cxs2, cys2 = apply_homography(xs2, ys2, H)
+                        cxs2, cys2 = _to_court(xs2, ys2)
                         _sc2.set_offsets(np.c_[cxs2, cys2])
                     fig.canvas.draw_idle()
                     plt.pause(0.001)
@@ -431,8 +443,8 @@ def main(debug=False, calibrate=False, reuse=False):
 
     print(f"Extracted {len(xs1)} positions for Player 1, {len(xs2)} for Player 2")
 
-    court_xs1, court_ys1 = apply_homography(xs1, ys1, H) if xs1 else ([], [])
-    court_xs2, court_ys2 = apply_homography(xs2, ys2, H) if xs2 else ([], [])
+    court_xs1, court_ys1 = _to_court(xs1, ys1) if xs1 else ([], [])
+    court_xs2, court_ys2 = _to_court(xs2, ys2) if xs2 else ([], [])
 
     stats1 = compute_movement_stats(court_xs1, court_ys1, fps, FRAME_SKIP)
     stats2 = compute_movement_stats(court_xs2, court_ys2, fps, FRAME_SKIP)

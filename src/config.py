@@ -5,9 +5,10 @@
 # ── Paths ─────────────────────────────────────────────────────────────────────
 import os as _os
 _PROJECT_ROOT    = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
-VIDEO_PATH       = _os.path.join(_PROJECT_ROOT, "assets", "video", "women360.mp4")
-CALIBRATION_PATH = _os.path.join(_PROJECT_ROOT, "assets", "homography.npy")
-OUTPUT_DIR       = _os.path.join(_PROJECT_ROOT, "output")
+VIDEO_PATH           = _os.path.join(_PROJECT_ROOT, "assets", "video", "women360.mp4")
+CALIBRATION_PATH     = _os.path.join(_PROJECT_ROOT, "assets", "homography.npy")
+CALIBRATION_3D_PATH  = _os.path.join(_PROJECT_ROOT, "assets", "calibration_3d.npz")
+OUTPUT_DIR           = _os.path.join(_PROJECT_ROOT, "output")
 
 # ── WSF Official Court Dimensions (metres) ────────────────────────────────────
 COURT_WIDTH_M  = 6.4

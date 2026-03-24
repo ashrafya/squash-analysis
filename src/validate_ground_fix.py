@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from video_utils import load_video
-from calibrate import get_homography, apply_homography
+from calibrate import load_best_calibration, get_homography, project_to_court, apply_homography, CalibData
 from plot_utils import draw_court, plot_heatmap_comparison
 from config import (
     VIDEO_PATH, VIDEO_FPS, FRAME_SKIP, CROP_MARGIN,
@@ -35,7 +35,10 @@ from config import (
 
 VALIDATION_DIR = os.path.join(OUTPUT_DIR, "validation")
 _FALLBACK_VIS  = 0.35
-mp_pose = mp.solutions.pose
+try:
+    mp_pose = mp.solutions.pose
+except AttributeError:
+    mp_pose = None  # mediapipe >= 0.10.30 removed solutions; use YOLO tracker instead
 
 _pose_kwargs = dict(
     static_image_mode=False,
