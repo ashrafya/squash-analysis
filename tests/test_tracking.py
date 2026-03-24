@@ -12,18 +12,31 @@ import extract_pose
 from unittest.mock import MagicMock, patch
 
 import mediapipe as mp
-mp_pose = mp.solutions.pose
+
+# mediapipe >= 0.10.30 removed the solutions API; guard gracefully.
+_mp_solutions_available = hasattr(mp, 'solutions')
+if _mp_solutions_available:
+    mp_pose = mp.solutions.pose
+    _LHEEL = mp_pose.PoseLandmark.LEFT_HEEL
+    _RHEEL = mp_pose.PoseLandmark.RIGHT_HEEL
+    _LANK  = mp_pose.PoseLandmark.LEFT_ANKLE
+    _RANK  = mp_pose.PoseLandmark.RIGHT_ANKLE
+    _LHIP  = mp_pose.PoseLandmark.LEFT_HIP
+    _RHIP  = mp_pose.PoseLandmark.RIGHT_HIP
+else:
+    mp_pose = None
+    # BlazePose landmark indices (hard-coded fallback so collection succeeds)
+    _LHEEL, _RHEEL = 29, 30
+    _LANK,  _RANK  = 27, 28
+    _LHIP,  _RHIP  = 23, 24
+
+pytestmark = pytest.mark.skipif(
+    not _mp_solutions_available,
+    reason="mediapipe.solutions removed in >= 0.10.30; legacy MediaPipe tracker not supported on this install",
+)
 
 from extract_pose import get_ground_position, smooth_positions, _detect_in_crop, detect_in_region
 from config import FOOT_VISIBILITY_MIN, CROP_MARGIN
-
-# Landmark index shortcuts
-_LHEEL = mp_pose.PoseLandmark.LEFT_HEEL
-_RHEEL = mp_pose.PoseLandmark.RIGHT_HEEL
-_LANK  = mp_pose.PoseLandmark.LEFT_ANKLE
-_RANK  = mp_pose.PoseLandmark.RIGHT_ANKLE
-_LHIP  = mp_pose.PoseLandmark.LEFT_HIP
-_RHIP  = mp_pose.PoseLandmark.RIGHT_HIP
 
 _FALLBACK_VIS = 0.35   # must match extract_pose._FALLBACK_VIS
 

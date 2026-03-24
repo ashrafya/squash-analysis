@@ -1,0 +1,19 @@
+\contentsline {section}{\numberline {1}Style Decision}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Why Not Full Dark Mode?}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Recommended Approach: Dual-Theme Strategy}{2}{subsection.1.2}%
+\contentsline {section}{\numberline {2}Design System}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Colour Tokens}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Typography}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Spacing \& Layout}{3}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Animation}{3}{subsection.2.4}%
+\contentsline {section}{\numberline {3}Page Architecture}{3}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Landing Page (\texttt {/})}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Analysis Page (\texttt {/analyze})}{4}{subsection.3.2}%
+\contentsline {section}{\numberline {4}Component Inventory}{4}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Layout Components}{4}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Landing Page Sections}{5}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Upload \& Processing Components}{5}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Reusable UI Primitives}{6}{subsection.4.4}%
+\contentsline {section}{\numberline {5}File \& Folder Structure}{6}{section.5}%
+\contentsline {section}{\numberline {6}Tech Stack}{7}{section.6}%
+\contentsline {section}{\numberline {7}UX Checklist (Pre-Build)}{7}{section.7}%

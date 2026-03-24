@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-space: 'Space Grotesk', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-inter);
+    font-size: 16px;
+    line-height: 1.6;
+    background-color: #FAFAFA;
+    color: #0A0A0A;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+    html { scroll-behavior: auto; }
+  }
+}
+
+@layer utilities {
+  .block-card {
+    border: 2px solid #0A0A0A;
+    transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+  }
+  .block-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #0A0A0A;
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 40%, #1a1a1a 80%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
+  }
+
+  .section-label {
+    font-family: var(--font-space);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 20s linear infinite;
+  }
+}

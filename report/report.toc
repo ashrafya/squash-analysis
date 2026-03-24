@@ -1,0 +1,18 @@
+\contentsline {section}{\numberline {1}Project Overview}{3}{section.1}%
+\contentsline {section}{\numberline {2}Pipeline Architecture}{3}{section.2}%
+\contentsline {section}{\numberline {3}Completed Work}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Court Calibration}{4}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Player Tracking}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Player Heatmaps}{6}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Zone Breakdown}{7}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Movement Statistics}{8}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Testing}{9}{subsection.3.6}%
+\contentsline {section}{\numberline {4}In-Progress Work}{10}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Ball Detection}{10}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Ball Tracking (Kalman Filter)}{10}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}TrackNetV4 (Experimental)}{11}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Rally Segmentation}{12}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Known Issues \& Blockers}{14}{section.5}%
+\contentsline {section}{\numberline {6}Remaining Planned Work}{14}{section.6}%
+\contentsline {section}{\numberline {7}Technical Stack}{15}{section.7}%
+\contentsline {section}{\numberline {8}Summary}{15}{section.8}%

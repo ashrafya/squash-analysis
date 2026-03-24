@@ -1,7 +1,15 @@
 /.claude/
-/assets/video/*
 /venv/
 assets/token.txt2
+
+# Next.js
+website/node_modules/
+website/.next/
+website/.env*.local
+
+# API runtime
+website/api/uploads/
+website/api/jobs/
 
 # Python bytecode
 __pycache__/
