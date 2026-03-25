@@ -1,0 +1,26 @@
+/.claude/
+/venv/
+assets/token.txt2
+assets/video/women720.mp4
+
+# LaTeX build artefacts
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+
+# Next.js
+website/node_modules/
+website/.next/
+website/.env*.local
+
+# API runtime
+website/api/uploads/
+website/api/jobs/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# YOLO model weights (auto-downloaded on first run)
+*.pt
