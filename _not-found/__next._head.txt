@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[97367,["/squash-analysis/_next/static/chunks/01xlw8hd842-c.js","/squash-analysis/_next/static/chunks/0d3shmwh5_nmn.js"],"ViewportBoundary"]
+3:I[97367,["/squash-analysis/_next/static/chunks/01xlw8hd842-c.js","/squash-analysis/_next/static/chunks/0d3shmwh5_nmn.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Squash Analysis — Analyse your game like a pro"}],["$","meta","1",{"name":"description","content":"Free, self-hosted squash analytics. Player heatmaps, ball tracking, rally segmentation, and PDF reports — automated from a single MP4."}]]}]}]}],null]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Gww8Xf3AsSCYKXEQaNfEl"}
