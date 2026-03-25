@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import { Upload, Film, X, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import clsx from "clsx";
@@ -11,7 +11,7 @@ export default function UploadZone({ onFile }: { onFile: (file: File) => void })
   const [error,    setError]    = useState<string | null>(null);
   const [selected, setSelected] = useState<File | null>(null);
 
-  const onDrop = useCallback((accepted: File[], rejected: { errors: { message: string }[] }[]) => {
+  const onDrop = useCallback((accepted: File[], rejected: FileRejection[]) => {
     setError(null);
     if (rejected.length > 0) { setError(rejected[0]?.errors[0]?.message ?? "Invalid file."); return; }
     if (accepted.length > 0) setSelected(accepted[0]);
