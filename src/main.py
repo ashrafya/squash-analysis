@@ -1,5 +1,7 @@
 import os
+import sys
 import warnings
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 warnings.filterwarnings("ignore", category=UserWarning, module="google.protobuf")
 
@@ -19,8 +21,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.tracker == "yolo":
-        from extract_pose_yolo import main
+        from tracking.extract_pose_yolo import main
     else:
-        from extract_pose import main
+        from tracking.extract_pose import main
 
     main(debug=args.debug, calibrate=args.calibrate, reuse=args.reuse)

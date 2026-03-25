@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from unittest.mock import MagicMock
 
-from validate_ground_fix import _midpoint, count_jump_artifacts
+from evaluation.validate_ground_fix import _midpoint, count_jump_artifacts
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

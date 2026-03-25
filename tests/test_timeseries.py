@@ -5,7 +5,7 @@ All tests use fps=25, frame_skip=1 → time_per_step = 0.04 s.
 
 import numpy as np
 import pytest
-from stats import compute_timeseries
+from analysis.stats import compute_timeseries
 from config import T_X, T_Y
 
 FPS  = 25

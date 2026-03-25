@@ -6,7 +6,7 @@ No video or calibration file required; we construct H matrices directly.
 
 import numpy as np
 import pytest
-from calibrate import apply_homography
+from calibration.calibrate import apply_homography
 
 
 # ── 16 ────────────────────────────────────────────────────────────────────────

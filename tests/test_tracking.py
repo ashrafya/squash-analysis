@@ -8,7 +8,7 @@ This is a one-time cost per pytest session (~2 s); all tests share the models.
 
 import numpy as np
 import pytest
-import extract_pose
+from tracking import extract_pose
 from unittest.mock import MagicMock, patch
 
 import mediapipe as mp
@@ -35,7 +35,7 @@ pytestmark = pytest.mark.skipif(
     reason="mediapipe.solutions removed in >= 0.10.30; legacy MediaPipe tracker not supported on this install",
 )
 
-from extract_pose import get_ground_position, smooth_positions, _detect_in_crop, detect_in_region
+from tracking.extract_pose import get_ground_position, smooth_positions, _detect_in_crop, detect_in_region
 from config import FOOT_VISIBILITY_MIN, CROP_MARGIN
 
 _FALLBACK_VIS = 0.35   # must match extract_pose._FALLBACK_VIS

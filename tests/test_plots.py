@@ -7,7 +7,7 @@ The Agg backend is activated in conftest.py so no display is needed.
 import tempfile
 import matplotlib.pyplot as plt
 import pytest
-from plot_utils import draw_court, plot_histograms, _build_heatmap, plot_heatmap_comparison
+from analysis.plot_utils import draw_court, plot_histograms, _build_heatmap, plot_heatmap_comparison
 from config import COURT_WIDTH_M, COURT_LENGTH_M, HEATMAP_GRID_X, HEATMAP_GRID_Y
 
 

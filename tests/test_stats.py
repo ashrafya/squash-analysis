@@ -6,7 +6,7 @@ All tests use fps=25, frame_skip=1 so time_per_step = 0.04 s.
 
 import json
 import pytest
-from stats import compute_movement_stats, save_run_history
+from analysis.stats import compute_movement_stats, save_run_history
 from config import T_X, T_Y, T_RADIUS_M
 
 FPS  = 25
@@ -91,7 +91,7 @@ _DUMMY_STATS = {
 # ── 21 ────────────────────────────────────────────────────────────────────────
 def test_save_run_history_creates_file(tmp_path, monkeypatch):
     """save_run_history creates run_history.json in OUTPUT_DIR."""
-    monkeypatch.setattr("stats.OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setattr("analysis.stats.OUTPUT_DIR", str(tmp_path))
     save_run_history(_DUMMY_STATS, _DUMMY_STATS, 100, 100, "test.mp4", 1000, 5)
     assert (tmp_path / "run_history.json").exists()
 
@@ -99,7 +99,7 @@ def test_save_run_history_creates_file(tmp_path, monkeypatch):
 # ── 22 ────────────────────────────────────────────────────────────────────────
 def test_save_run_history_has_expected_keys(tmp_path, monkeypatch):
     """Each run entry contains the required schema keys."""
-    monkeypatch.setattr("stats.OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setattr("analysis.stats.OUTPUT_DIR", str(tmp_path))
     save_run_history(_DUMMY_STATS, _DUMMY_STATS, 100, 100, "test.mp4", 1000, 5)
     data = json.loads((tmp_path / "run_history.json").read_text())
     entry = data[0]
@@ -110,7 +110,7 @@ def test_save_run_history_has_expected_keys(tmp_path, monkeypatch):
 # ── 23 ────────────────────────────────────────────────────────────────────────
 def test_save_run_history_appends_multiple(tmp_path, monkeypatch):
     """Calling twice appends a second entry without overwriting the first."""
-    monkeypatch.setattr("stats.OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setattr("analysis.stats.OUTPUT_DIR", str(tmp_path))
     save_run_history(_DUMMY_STATS, _DUMMY_STATS, 100, 100, "a.mp4", 1000, 5)
     save_run_history(_DUMMY_STATS, _DUMMY_STATS, 200, 200, "b.mp4", 1000, 5)
     data = json.loads((tmp_path / "run_history.json").read_text())

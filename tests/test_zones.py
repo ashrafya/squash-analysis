@@ -8,7 +8,7 @@ Zone grid (3×3):
 """
 
 import pytest
-from stats import compute_zone_stats
+from analysis.stats import compute_zone_stats
 from config import (
     COURT_WIDTH_M, COURT_LENGTH_M,
     ZONE_COL_EDGES, ZONE_ROW_EDGES, ZONE_NAMES, T_X, T_Y,

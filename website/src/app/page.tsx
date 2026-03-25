@@ -9,7 +9,7 @@ import CTABanner from "@/components/sections/CTABanner";
 
 export default function LandingPage() {
   return (
-    <div className="bg-bg-light min-h-screen">
+    <div className="bg-chalk min-h-screen">
       <Navbar />
       <main>
         <Hero />

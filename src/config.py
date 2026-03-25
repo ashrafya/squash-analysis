@@ -23,9 +23,9 @@ T_Y = COURT_LENGTH_M - SHORT_LINE_M  # 5.49 m — T junction y position
 
 # ── Video Processing ──────────────────────────────────────────────────────────
 VIDEO_FPS        = 25   # known frame rate of the source videos — used for all timing math
-FRAME_CAP        = 2000   # max frames to process (set to None to process full video)
-FRAME_SKIP       = 20   # process every Nth frame; time between analysed frames = FRAME_SKIP / VIDEO_FPS
-MODEL_COMPLEXITY = 0    # MediaPipe model complexity: 0=fastest, 1=balanced, 2=most accurate
+FRAME_CAP        = 3000   # max frames to process (set to None to process full video)
+FRAME_SKIP       = 2   # process every Nth frame; time between analysed frames = FRAME_SKIP / VIDEO_FPS
+MODEL_COMPLEXITY = 2    # MediaPipe model complexity: 0=fastest, 1=balanced, 2=most accurate
 
 # ── Player Tracking ───────────────────────────────────────────────────────────
 SMOOTH_WINDOW         = 9     # rolling median window for noise filtering
