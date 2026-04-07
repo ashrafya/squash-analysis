@@ -3,11 +3,13 @@ import { useState } from "react";
 import Image from "next/image";
 import clsx from "clsx";
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const tabs = [
-  { id: "heatmap",    label: "Heatmaps",       active: "bg-lime text-ink border-lime",    images: [{ src: "/demo/heatmap_player1.png", alt: "Player 1 heatmap" }, { src: "/demo/heatmap_player2.png", alt: "Player 2 heatmap" }] },
-  { id: "zones",      label: "Zone Breakdown", active: "bg-coral text-chalk border-coral", images: [{ src: "/demo/zone_breakdown.png",  alt: "Zone breakdown" }] },
-  { id: "trajectory", label: "Trajectory",     active: "bg-purple text-chalk border-purple",images: [{ src: "/demo/combined_court.png", alt: "Combined court" }] },
-  { id: "charts",     label: "Speed & Stats",  active: "bg-cyan text-ink border-cyan",    images: [{ src: "/demo/timeseries.png",      alt: "Speed" }, { src: "/demo/rally_timeline.png", alt: "Rallies" }] },
+  { id: "heatmap",    label: "Heatmaps",       active: "bg-lime text-ink border-lime",    images: [{ src: `${BASE}/demo/heatmap_player1.png`, alt: "Player 1 heatmap" }, { src: `${BASE}/demo/heatmap_player2.png`, alt: "Player 2 heatmap" }] },
+  { id: "zones",      label: "Zone Breakdown", active: "bg-coral text-chalk border-coral", images: [{ src: `${BASE}/demo/zone_breakdown.png`,  alt: "Zone breakdown" }] },
+  { id: "trajectory", label: "Trajectory",     active: "bg-purple text-chalk border-purple",images: [{ src: `${BASE}/demo/combined_court.png`, alt: "Combined court" }] },
+  { id: "charts",     label: "Speed & Stats",  active: "bg-cyan text-ink border-cyan",    images: [{ src: `${BASE}/demo/timeseries.png`,      alt: "Speed" }, { src: `${BASE}/demo/rally_timeline.png`, alt: "Rallies" }] },
 ];
 
 export default function SampleOutputs() {
